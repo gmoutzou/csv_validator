@@ -2,7 +2,7 @@
 
 * CSV File validation tool with custom user defined rules
 * Rule Engine - Rules are executed "on the fly"
-* Rule Library - Local (python script) & Remote (PostgreSQL DB) rule set that allows dynamic rule updates from user without requiring code changes
+* Rule Library - Local (python script) & Remote (PostgreSQL DB) rule set that allows dynamic rule updates by the user without requiring code changes
 * Version 1.0.0
 
 ### Programming Languages & Frameworks
