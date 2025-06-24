@@ -16,6 +16,7 @@ import v_utilities as util
 import v_config as cfg
 import v_pgdev as pgdev
 import v_rule_library as vlib
+import pyperclip
 from v_engine import RuleEngine
 from tkinter import Tk
 from tkinter import ttk
@@ -57,6 +58,10 @@ class App(Tk):
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.quit)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
+
+        self.editmenu = tk.Menu(self.menubar, tearoff=0)
+        self.editmenu.add_command(label="Copy to clipboard", command=self.copy_to_clipboard)
+        self.menubar.add_cascade(label="Edit", menu=self.editmenu)
 
         self.utilitiesmenu = tk.Menu(self.menubar, tearoff=0)
         self.utilitiesmenu.add_command(label="RuleDB", command=self.open_ruledb_window)
@@ -234,6 +239,10 @@ class App(Tk):
             self.total_label['text'] = "Total invalid values: " + str(total)
             self.text_area.insert(tk.END, txt_content)
             self.disable_text_area()
+
+    def copy_to_clipboard(self):
+        content = self.text_area.get("1.0", tk.END)
+        pyperclip.copy(content)
 
 class RulesManagementWindow(tk.Toplevel):
     def __init__(self, *args, engine=None, columns=None, **kwargs):
