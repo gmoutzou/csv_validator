@@ -346,26 +346,38 @@ rule_library.append(rule)
 ##################################################################
 
 #Matches date format with slashes [26]
-def date_format_1(value, value_range):
+def valid_date_slash_format(value, value_range):
+    res = True
+    format = "%d/%m/%Y"
     pattern_str = r'^\d{2}/\d{2}/\d{4}$'
     if re.match(pattern_str, value):
-        return True
+        try:
+            res = bool(datetime.strptime(value, format))
+        except ValueError:
+            res = False
     else:
-        return False
+        res = False
+    return res
 
-rule = Rule(name='matches_date_format_slash', descr='Check if the column values match with date format DD/MM/YYY', func=date_format_1)
+rule = Rule(name='valid_date_slash_format', descr='Check if the column values match with date format DD/MM/YYY', func=valid_date_slash_format)
 rule_library.append(rule)
 ##################################################################
 
 #Matches date format with dashes [27]
-def date_format_2(value, value_range):
+def valid_date_dash_format(value, value_range):
+    res = True
+    format = "%d-%m-%Y"
     pattern_str = r'^\d{2}-\d{2}-\d{4}$'
     if re.match(pattern_str, value):
-        return True
+        try:
+            res = bool(datetime.strptime(value, format))
+        except ValueError:
+            res = False
     else:
-        return False
+        res = False
+    return res
 
-rule = Rule(name='matches_date_format_dash', descr='Check if the column values match with date format DD-MM-YYY', func=date_format_2)
+rule = Rule(name='valid_date_dash_format', descr='Check if the column values match with date format DD-MM-YYY', func=valid_date_dash_format)
 rule_library.append(rule)
 ##################################################################
 
