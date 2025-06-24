@@ -24,12 +24,6 @@ from tkinter import scrolledtext
 import functools
 fp = functools.partial
 
-"""
-import httpimport
-with httpimport.remote_repo('http://10.33.244.79/ofetea/apofash/libraries/Python/v_library.py'):
-    import v_library as vlib
-"""
-
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
