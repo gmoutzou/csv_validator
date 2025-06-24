@@ -10,4 +10,4 @@
 - Pandas
 - Numpy
 
-### Developed by [Georgios Mountzouris](mailto:gmoutzou@gmail.com)
+### Developed by [Georgios Mountzouris](mailto:gmountzouris@efka.gov.gr)

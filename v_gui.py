@@ -585,8 +585,8 @@ class RuleDBWindow(tk.Toplevel):
         self.delbtn = tk.Button(self.control_frame, text="Delete", width=10, command=delete_selected_rule)
         self.delbtn.pack()
 
-        #self.edtbtn["state"] = "disabled"
-        #self.delbtn["state"] = "disabled"
+        self.edtbtn["state"] = "disabled"
+        self.delbtn["state"] = "disabled"
 
         #self.bind('<FocusIn>', _event_handler)
 
