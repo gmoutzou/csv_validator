@@ -27,8 +27,9 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="v1.0.0"
-        self.title("CSV File Validator " + self.version)
+        self.version="1.0.0"
+        self.release = "beta"
+        self.title("CSV File Validator v" + self.version + '(' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
         self.geometry("1024x640")
         self.resizable(False, False)
@@ -174,9 +175,12 @@ class App(Tk):
         self.dialog.grab_set()
 
     def init_state(self):
+        version_info = util.get_version_info()
+        if version_info['version'] + version_info['release'] != self.version + self.release:
+            mb.showwarning(title="Warning!", message="A new version is available, please download it from http://10.33.244.79/ofetea/apofash/assets/csv-validator.php", parent=self)
         self.df = None
         self.engine = None
-        self.hide_rule_panel() 
+        self.hide_rule_panel()
         self.hide_fire_panel()
         self.hide_exec_panel()
 
@@ -577,8 +581,8 @@ class RuleDBWindow(tk.Toplevel):
         self.delbtn = tk.Button(self.control_frame, text="Delete", width=10, command=delete_selected_rule)
         self.delbtn.pack()
 
-        self.edtbtn["state"] = "disabled"
-        self.delbtn["state"] = "disabled"
+        #self.edtbtn["state"] = "disabled"
+        #self.delbtn["state"] = "disabled"
 
         #self.bind('<FocusIn>', _event_handler)
 

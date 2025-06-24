@@ -10,6 +10,7 @@ import io
 import csv
 import pandas as pd
 import numpy as np
+import requests
 from v_pgdev import Pgdev
 
 def print_msg_box(msg, indent=1, width=None, title=None):
@@ -143,3 +144,13 @@ def edit_rule_in_db(pgconf, data):
     with Pgdev(pgconf) as pgdev:
         query = "UPDATE " + pgconf["dbschema"] + ".rules SET (name, description, function_name, function_body) = (%s, %s, %s, %s) WHERE id = %s;"
         pgdev.crud(query, data)
+
+def get_version_info():
+    version_info = None
+    try:
+        url = "http://10.33.244.79/ofetea/apofash/assets/csv-validator.php"
+        r = requests.get(url)
+        version_info = r.json()
+    except:
+        pass
+    return version_info 
