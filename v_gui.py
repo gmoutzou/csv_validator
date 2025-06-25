@@ -62,6 +62,7 @@ class App(Tk):
 
         self.helpmenu = tk.Menu(self.menubar, tearoff=0)
         self.helpmenu.add_command(label="Help")
+        self.helpmenu.add_command(label="Check for updates", command=self.check_for_updates)
         self.helpmenu.add_separator()
         self.helpmenu.add_command(label="About", command=self.about_window)
         self.menubar.add_cascade(label="Help", menu=self.helpmenu)
@@ -174,12 +175,15 @@ class App(Tk):
         self.about_label.pack(side=tk.BOTTOM)
         self.dialog.grab_set()
 
-    def init_state(self):
+    def check_for_updates(self):
         version_info = util.get_version_info()
         web_version = int(version_info['version'].replace('.', ''))
         my_version = int(self.version.replace('.', ''))
         if (web_version > my_version) or (web_version == my_version and version_info['release'] != self.release):
-            mb.showwarning(title="Warning!", message="A new version is available, please download it from http://10.33.244.79/ofetea/apofash/assets/csv-validator.php", parent=self)
+            mb.showwarning(title="Warning!", message="A new version is available, please download it from http://10.33.244.79/ofetea/apofash/assets/csv_validator.zip", parent=self)
+
+    def init_state(self):
+        self.check_for_updates()
         self.df = None
         self.engine = None
         self.hide_rule_panel()
@@ -269,17 +273,22 @@ class RulesManagementWindow(tk.Toplevel):
             engine.clear()
             _listbox_clear()
 
-        def _export():
-            util.export_to_xml('template.xml', engine)
-        
         def _import():
-            clear_all()
-            xml_rules = util.import_from_xml('template.xml')
-            for r in vlib.get_rule_library():
-                for x in xml_rules:
-                    if r.name == x[1]:
-                        engine.add_rule(rule=r, column=x[0], value_range=x[2])
-            _listbox_fill()
+            filename = fd.askopenfilename(defaultextension=".xml", filetypes=[("XML Documents","*.xml")])
+            if filename:
+                clear_all()
+                xml_rules = util.import_from_xml(filename)
+                for r in vlib.get_rule_library():
+                    for x in xml_rules:
+                        if r.name == x[1]:
+                            engine.add_rule(rule=r, column=x[0], value_range=x[2])
+                _listbox_fill()
+
+        def _export():
+            if self.listbox.index("end") > 0:
+                filename = fd.asksaveasfile(initialfile='template.xml', defaultextension=".xml", filetypes=[("XML Documents","*.xml")])
+                if filename:
+                    util.export_to_xml(filename, engine)
 
         def open_new_rule_window():
             self.new_rule_window = NewRuleWindow(self, parent=self, engine=engine, columns=columns)
