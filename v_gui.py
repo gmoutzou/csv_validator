@@ -27,9 +27,9 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="1.1.0"
+        self.version="1.3.1"
         self.release = "beta"
-        self.title("CSV File Validator v" + self.version + '(' + self.release + ')')
+        self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
         self.geometry("1024x640")
         self.resizable(False, False)
@@ -48,6 +48,8 @@ class App(Tk):
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="CSV Configuration", command=self.open_csv_config_window)
         self.filemenu.add_command(label="DB Configuration", command=self.open_db_config_window)
+        self.filemenu.add_separator()
+        self.filemenu.add_command(label="Export to Excel", command=self.export_to_excel)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.quit)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
@@ -159,6 +161,11 @@ class App(Tk):
 
     def open_rules_window(self, event):
         self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.df))
+
+    def export_to_excel(self):
+        filename = fd.SaveAs(initialfile='output.xlsx', defaultextension=".xlsx", filetypes=[("XLSX Spreadsheets","*.xlsx")])
+        if filename:
+            util.df_to_xlsx(filename.show(), self.df)
 
     def about_window(self):
         def close_window():

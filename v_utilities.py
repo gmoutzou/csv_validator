@@ -6,13 +6,14 @@
 # georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
-import io
+import io, os
 import csv
 import pandas as pd
 import numpy as np
 import requests
 import xml.etree.ElementTree as ET
 from v_pgdev import Pgdev
+from xlsxwriter.color import Color
 
 def print_msg_box(msg, indent=1, width=None, title=None):
     """Print message-box with optional title."""
@@ -102,6 +103,16 @@ def csv_data_structure(df, method='describe'):
         s = df.describe()
         return s.to_string()
     
+def df_to_xlsx(filename, df):
+    if filename:
+        # Create a Pandas Excel writer using XlsxWriter as the engine
+        with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Sheet1')
+            workbook = writer.book
+            worksheet = writer.sheets["Sheet1"]
+            color_format = workbook.add_format({"bg_color": Color("#FF7F50")})
+            worksheet.write(0, 1, '', color_format)
+
 def get_db_import_statements(pgconf):
     rows = []
     with Pgdev(pgconf) as pgdev:
