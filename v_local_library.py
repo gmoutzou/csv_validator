@@ -105,7 +105,7 @@ def greater_than(value, value_range):
     else:
         return True
 
-rule = Rule(name='greater_than', descr='Check if the column values \nare greater than to the given value', func=greater_than)
+rule = Rule(name='greater_than', descr='Check if the column values \nare greater than the given value', func=greater_than)
 rule_library.append(rule)
 ##################################################################
 

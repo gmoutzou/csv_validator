@@ -27,6 +27,11 @@ class RuleEngine():
         del self.columns_to_check[index]
         del self.acceptable_values[index]
 
+    def modify_rule(self, index, rule, column, value_range):
+        self.rules[index] = rule
+        self.columns_to_check[index] = column
+        self.acceptable_values[index] = value_range
+
     def anomaly_detection(self, column, result):
         invalid_list = []
         for i, t in enumerate(result):

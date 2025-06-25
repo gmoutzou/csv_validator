@@ -11,6 +11,7 @@ import csv
 import pandas as pd
 import numpy as np
 import requests
+import xml.etree.ElementTree as ET
 from v_pgdev import Pgdev
 
 def print_msg_box(msg, indent=1, width=None, title=None):
@@ -25,7 +26,7 @@ def print_msg_box(msg, indent=1, width=None, title=None):
         box += f'║{space}{"-" * len(title):<{width}}{space}║\n'  # underscore
     box += ''.join([f'║{space}{line:<{width}}{space}║\n' for line in lines])
     box += f'╚{"═" * (width + indent * 2)}╝'  #lower_border
-    print(box)
+    return box
     
 def print_result(anomalies):
     print_msg_box('Validation check result')
@@ -36,12 +37,18 @@ def print_result(anomalies):
 
 def get_result(anomalies):
     total = 0
-    result = '-----------------------\nValidation check result\n-----------------------\n'
+    result = '=======================\nValidation check result\n=======================\n'
+    result += '\n-----------------------'
+    for k, v in anomalies.items():
+        inv = len(v)
+        total += inv
+        result += '\n[' + k + '] invalid values: ' + str(inv)
+    result += '\n-----------------------'
     for k, v in anomalies.items():
         result += '\n' + k + '\n'
         for val in v:
-            total += 1
             result += '-> Row: ' + str(val[0]) + ', Value: ' + str(val[1]) + '\n'
+    result += '-----------------------\n'
     return total, result
 
 def get_delimiter(filename):
@@ -105,7 +112,7 @@ def get_db_import_statements(pgconf):
 def get_db_rules(pgconf):
     rows = []
     with Pgdev(pgconf) as pgdev:
-        sql = "SELECT * FROM %s.rules ORDER BY id asc;" % (pgconf["dbschema"])
+        sql = "SELECT * FROM %s.rules ORDER BY name asc;" % (pgconf["dbschema"])
         rows = pgdev.fetch_data_all(sql)
     return rows
 
@@ -153,4 +160,50 @@ def get_version_info():
         version_info = r.json()
     except:
         pass
-    return version_info 
+    return version_info
+
+def get_selected_rule_info(rule):
+    if rule:
+        column = ""
+        name = ""
+        vr = ""
+        info = rule.split(") ", 1)[1]
+        info = info.split(" -> ", 1)
+        column = info[0]
+        info = info[1].split(": ", 1)
+        name = info[0]
+        if len(info) > 1:
+            vr = info[1]
+        return column, name, vr
+    else:
+        return ()
+
+def export_to_xml(filename, engine):
+    root = ET.Element("rules")
+    for i, r in enumerate(engine.rules):
+        rule = ET.SubElement(root, "rule")
+        ET.SubElement(rule, "column_to_check").text = engine.columns_to_check[i]
+        ET.SubElement(rule, "rule_name").text = r.name
+        vr = ET.SubElement(rule, "value_range")
+        for v in engine.acceptable_values[i]:
+            ET.SubElement(vr, "value").text = v
+
+    tree = ET.ElementTree(root)
+    #xmlstr = ET.tostring(root, encoding='utf8')
+    #print(xmlstr)
+    ET.indent(tree, space="\t", level=0)
+    tree.write(filename, encoding='utf-8', xml_declaration=True)
+
+def import_from_xml(filename):
+    xml_rules = []
+    tree = ET.parse(filename)
+    root = tree.getroot()
+    for rule in root.findall('rule'):
+        column_to_check = rule.find('column_to_check').text
+        rule_name = rule.find('rule_name').text
+        vr = rule.find('value_range')
+        values = []
+        for v in vr:
+            values.append(v.text)
+        xml_rules.append((column_to_check, rule_name, values))
+    return xml_rules

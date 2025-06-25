@@ -27,7 +27,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="1.0.0"
+        self.version="1.1.0"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + '(' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -176,7 +176,9 @@ class App(Tk):
 
     def init_state(self):
         version_info = util.get_version_info()
-        if version_info['version'] + version_info['release'] != self.version + self.release:
+        web_version = int(version_info['version'].replace('.', ''))
+        my_version = int(self.version.replace('.', ''))
+        if (web_version > my_version) or (web_version == my_version and version_info['release'] != self.release):
             mb.showwarning(title="Warning!", message="A new version is available, please download it from http://10.33.244.79/ofetea/apofash/assets/csv-validator.php", parent=self)
         self.df = None
         self.engine = None
@@ -267,8 +269,25 @@ class RulesManagementWindow(tk.Toplevel):
             engine.clear()
             _listbox_clear()
 
+        def _export():
+            util.export_to_xml('template.xml', engine)
+        
+        def _import():
+            clear_all()
+            xml_rules = util.import_from_xml('template.xml')
+            for r in vlib.get_rule_library():
+                for x in xml_rules:
+                    if r.name == x[1]:
+                        engine.add_rule(rule=r, column=x[0], value_range=x[2])
+            _listbox_fill()
+
         def open_new_rule_window():
             self.new_rule_window = NewRuleWindow(self, parent=self, engine=engine, columns=columns)
+
+        def open_rule_amendment_window():
+            selected_rule = self.listbox.curselection()
+            if selected_rule:
+                self.new_rule_window = NewRuleWindow(self, parent=self, engine=engine, columns=columns, amendment=(selected_rule[0], self.listbox.get(selected_rule)))
 
         #rules frame
         self.rules_frame = tk.Frame(self)
@@ -291,10 +310,16 @@ class RulesManagementWindow(tk.Toplevel):
 
         self.addbtn = tk.Button(self.control_frame, text="Add", width=10, command=open_new_rule_window)
         self.addbtn.pack()
+        self.edtbtn = tk.Button(self.control_frame, text="Edit", width=10, command=open_rule_amendment_window)
+        self.edtbtn.pack()
         self.delbtn = tk.Button(self.control_frame, text="Delete", width=10, command=delete_selected_rule)
         self.delbtn.pack()
         self.delbtn = tk.Button(self.control_frame, text="Clear all", width=10, command=clear_all)
         self.delbtn.pack()
+        self.impbtn = tk.Button(self.control_frame, text="Import", width=10, command=_import)
+        self.impbtn.pack()
+        self.expbtn = tk.Button(self.control_frame, text="Export", width=10, command=_export)
+        self.expbtn.pack()
 
         #self.bind('<FocusIn>', _event_handler)
 
@@ -316,10 +341,10 @@ class RulesManagementWindow(tk.Toplevel):
             self.listbox.insert(tk.END, str(i+1) + ') ' + engine.columns_to_check[i] + ' -> ' + r.name + vr)
 
 class NewRuleWindow(tk.Toplevel):
-    def __init__(self, *args, parent=None, engine=None, columns=None, **kwargs):
+    def __init__(self, *args, parent=None, engine=None, columns=None, amendment=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("460x180")
-        self.title("New Rule")
+        self.title_text = "New Rule"
 
         self.rule_name = tk.StringVar()
         self.col = tk.StringVar()
@@ -330,14 +355,18 @@ class NewRuleWindow(tk.Toplevel):
         def add_rule_to_engine(event):
             for r in vlib.get_rule_library():
                 if r.name == self.rule_name.get():
-                    engine.add_rule(rule=r, column=self.col.get(), value_range=util.get_value_range(self.vr.get()))
-                    parent.event_handler(engine)
-                    self.rule_name.set('')
-                    self.col.set('')
-                    self.vr.set('')
-                    self.descr_label['text'] = ''
-                    #self.destroy()
-
+                    if amendment:
+                        engine.modify_rule(index=amendment[0], rule=r, column=self.col.get(), value_range=util.get_value_range(self.vr.get()))
+                        parent.event_handler(engine)
+                        self.destroy()
+                    else:
+                        engine.add_rule(rule=r, column=self.col.get(), value_range=util.get_value_range(self.vr.get()))
+                        parent.event_handler(engine)
+                        self.rule_name.set('')
+                        self.col.set('')
+                        self.vr.set('')
+                        self.descr_label['text'] = ''
+                        
         self.control_frame = tk.Frame(self, background='grey', relief=tk.GROOVE)
         self.control_frame.pack(fill=tk.X, side=tk.TOP, pady=5)
 
@@ -370,6 +399,15 @@ class NewRuleWindow(tk.Toplevel):
         self.addbtn.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
         self.addbtn.bind('<Button-1>', add_rule_to_engine)
 
+        if amendment:
+            self.addbtn['text'] = "Modify rule"
+            self.title_text = "Rule Amendment"
+            amendment_info = util.get_selected_rule_info(amendment[1])
+            self.col.set(amendment_info[0])
+            self.rule_name.set(amendment_info[1])
+            self.vr.set(amendment_info[2])
+
+        self.title(self.title_text)
         #self.focus()
         self.wait_visibility()
         self.grab_set()
@@ -547,9 +585,9 @@ class RuleDBWindow(tk.Toplevel):
                 _listbox_fill()
 
         def edit_selected_rule():
-            selectied_rule = self.listbox.curselection()
-            if selectied_rule:
-                rule = util.get_rule_from_db(self.dbconfig, self.listbox.get(selectied_rule))
+            selected_rule = self.listbox.curselection()
+            if selected_rule:
+                rule = util.get_rule_from_db(self.dbconfig, self.listbox.get(selected_rule))
                 self.new_rule_window = NewDBRuleWindow(self, parent=self, rule=rule)
 
         def open_new_rule_window():
