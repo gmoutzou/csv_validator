@@ -190,12 +190,12 @@ class App(Tk):
             mb.showwarning(title="Warning!", message="A new version is available, please download it from http://10.33.244.79/ofetea/apofash/assets/csv_validator.zip", parent=self)
 
     def init_state(self):
-        self.check_for_updates()
         self.df = None
         self.engine = None
         self.hide_rule_panel()
         self.hide_fire_panel()
         self.hide_exec_panel()
+        self.check_for_updates()
 
     def disable_text_area(self):
         self.text_area.configure(state='disabled')
