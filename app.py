@@ -27,7 +27,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.0.1"
+        self.version="2.1.0"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -112,6 +112,7 @@ class App(Tk):
         self.bind('<FocusIn>', self.focus_event_handler)
 
         self.init_state()
+        self.check_for_updates(infomsg=False)
 
     def run_process(self, var, index, mode):
         self.text_area['bg'] = 'white'
@@ -182,20 +183,29 @@ class App(Tk):
         self.about_label.pack(side=tk.BOTTOM)
         self.dialog.grab_set()
 
-    def check_for_updates(self):
+    def check_for_updates(self, infomsg=True):
         version_info = util.get_version_info()
         web_version = int(version_info['version'].replace('.', ''))
         my_version = int(self.version.replace('.', ''))
         if (web_version > my_version) or (web_version == my_version and version_info['release'] != self.release):
             mb.showwarning(title="Warning!", message="A new version is available, please download it from http://10.33.244.79/ofetea/apofash/assets/csv_validator.zip", parent=self)
+        else:
+            if infomsg:
+                mb.showinfo(title="No newer version", message="You are running the latest vesion of application!", parent=self)
 
     def init_state(self):
         self.df = None
         self.engine = None
+        self.disable_export_to_excel()
         self.hide_rule_panel()
         self.hide_fire_panel()
         self.hide_exec_panel()
-        self.check_for_updates()
+
+    def enable_export_to_excel(self):
+        self.filemenu.entryconfig("Export to Excel", state="normal")
+
+    def disable_export_to_excel(self):
+        self.filemenu.entryconfig("Export to Excel", state="disabled")
 
     def disable_text_area(self):
         self.text_area.configure(state='disabled')
@@ -244,6 +254,7 @@ class App(Tk):
             self.text_area['bg'] = 'black'
             self.text_area['fg'] = 'white'
             self.show_exec_panel()
+            self.enable_export_to_excel()
             self.exec_label['text'] = "Execution time: " + str(end - start) + " seconds"
             self.total_label['text'] = "Total invalid values: " + str(total)
             self.text_area.insert(tk.END, txt_content)
@@ -635,8 +646,8 @@ class RuleDBWindow(tk.Toplevel):
         self.delbtn = tk.Button(self.control_frame, text="Delete", width=10, command=delete_selected_rule)
         self.delbtn.pack()
 
-        #self.edtbtn["state"] = "disabled"
-        #self.delbtn["state"] = "disabled"
+        self.edtbtn["state"] = "disabled"
+        self.delbtn["state"] = "disabled"
 
         #self.bind('<FocusIn>', _event_handler)
 

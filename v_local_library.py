@@ -182,7 +182,11 @@ rule_library.append(rule)
 
 #Is numeric [12]
 def is_numeric(value, value_range):
-    return str(value).isnumeric()
+    try: 
+        float(str(value).replace(',', '.'))
+        return True
+    except:
+        return False
 
 rule = Rule(name='is_numeric', descr='Check if the column contains numeric values', func=is_numeric)
 rule_library.append(rule)
