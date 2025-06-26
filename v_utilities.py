@@ -168,10 +168,9 @@ def edit_rule_in_db(pgconf, data):
         query = "UPDATE " + pgconf["dbschema"] + ".rules SET (name, description, function_name, function_body) = (%s, %s, %s, %s) WHERE id = %s;"
         pgdev.crud(query, data)
 
-def get_version_info():
+def get_version_info(url):
     version_info = None
     try:
-        url = "http://10.33.244.79/ofetea/apofash/assets/csv-validator.php"
         r = requests.get(url)
         version_info = r.json()
     except:

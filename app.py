@@ -27,7 +27,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.1.0"
+        self.version="2.0.1"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -184,11 +184,12 @@ class App(Tk):
         self.dialog.grab_set()
 
     def check_for_updates(self, infomsg=True):
-        version_info = util.get_version_info()
+        config = cfg.load_config(section="general")
+        version_info = util.get_version_info(config['api_url'])
         web_version = int(version_info['version'].replace('.', ''))
         my_version = int(self.version.replace('.', ''))
         if (web_version > my_version) or (web_version == my_version and version_info['release'] != self.release):
-            mb.showwarning(title="Warning!", message="A new version is available, please download it from http://10.33.244.79/ofetea/apofash/assets/csv_validator.zip", parent=self)
+            mb.showwarning(title="Warning!", message="A new version is available (" + version_info['version'] + " " + version_info['release'] + "), please download it from " + config['download_url'], parent=self)
         else:
             if infomsg:
                 mb.showinfo(title="No newer version", message="You are running the latest vesion of application!", parent=self)
