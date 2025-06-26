@@ -27,7 +27,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.0.1"
+        self.version="2.1.2"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -120,6 +120,7 @@ class App(Tk):
         if self.csv_file.get():
             if os.path.exists(self.csv_file.get()) and self.csv_file.get().endswith('.csv'):
                 #sep = util.get_delimiter(self.csv_file.get())
+                self.init_state()
                 config = cfg.load_config()
                 sep = config['delimiter']
                 hdr = 'infer' if config['header'] == 'True' else None

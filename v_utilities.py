@@ -110,13 +110,16 @@ def df_to_xlsx(filename, df, anomalies):
             df.to_excel(writer, index=False, sheet_name='Sheet1')
             workbook = writer.book
             worksheet = writer.sheets["Sheet1"]
-            color_format = workbook.add_format({"bg_color": Color("#FFFF00")})
+            (max_row, max_col) = df.shape
+            cell_format = workbook.add_format({"bg_color": Color("#FFFF00")})
+            cell_format.set_bold(True)
             for k, v in anomalies.items():
                 col = columns.index(k)
                 for val in v:
                     row = val[0]
                     value = val[1]
-                    worksheet.write(row, col, value, color_format)
+                    worksheet.write(row, col, value, cell_format)
+            worksheet.set_column(0, max_col - 1, 15)
 
 def get_db_import_statements(pgconf):
     rows = []
