@@ -103,15 +103,20 @@ def csv_data_structure(df, method='describe'):
         s = df.describe()
         return s.to_string()
     
-def df_to_xlsx(filename, df):
+def df_to_xlsx(filename, df, anomalies):
     if filename:
-        # Create a Pandas Excel writer using XlsxWriter as the engine
+        columns = get_df_columns(df)
         with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
             df.to_excel(writer, index=False, sheet_name='Sheet1')
             workbook = writer.book
             worksheet = writer.sheets["Sheet1"]
-            color_format = workbook.add_format({"bg_color": Color("#FF7F50")})
-            worksheet.write(0, 1, '', color_format)
+            color_format = workbook.add_format({"bg_color": Color("#FFFF00")})
+            for k, v in anomalies.items():
+                col = columns.index(k)
+                for val in v:
+                    row = val[0]
+                    value = val[1]
+                    worksheet.write(row, col, value, color_format)
 
 def get_db_import_statements(pgconf):
     rows = []
