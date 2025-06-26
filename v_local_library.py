@@ -357,7 +357,7 @@ def valid_date_slash_format(value, value_range):
         res = False
     return res
 
-rule = Rule(name='valid_date_slash_format', descr='Check if the column values match with date format DD/MM/YYY', func=valid_date_slash_format)
+rule = Rule(name='valid_date_slash_format', descr='Check if the column values match with date format DD/MM/YYYY', func=valid_date_slash_format)
 rule_library.append(rule)
 ##################################################################
 
@@ -375,7 +375,7 @@ def valid_date_dash_format(value, value_range):
         res = False
     return res
 
-rule = Rule(name='valid_date_dash_format', descr='Check if the column values match with date format DD-MM-YYY', func=valid_date_dash_format)
+rule = Rule(name='valid_date_dash_format', descr='Check if the column values match with date format DD-MM-YYYY', func=valid_date_dash_format)
 rule_library.append(rule)
 ##################################################################
 
