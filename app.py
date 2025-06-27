@@ -190,7 +190,7 @@ class App(Tk):
         web_version = int(version_info['version'].replace('.', ''))
         my_version = int(self.version.replace('.', ''))
         if (web_version > my_version) or (web_version == my_version and version_info['release'] != self.release):
-            mb.showwarning(title="Warning!", message="A new version is available (" + version_info['version'] + " " + version_info['release'] + "), please download it from " + config['download_url'], parent=self)
+            mb.showwarning(title="Warning!", message="A new version is available (" + version_info['version'] + " " + version_info['release'] + "), get it from " + config['download_url'], parent=self)
         else:
             if infomsg:
                 mb.showinfo(title="No newer version", message="You are running the latest vesion of application!", parent=self)
