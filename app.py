@@ -201,7 +201,7 @@ class App(Tk):
             mb.showwarning(title="Warning!", message="A new version is available (" + version_info['version'] + " " + version_info['release'] + "), get it from " + config['download_url'], parent=self)
         else:
             if infomsg:
-                mb.showinfo(title="No newer version", message="You are running the latest vesion of application!", parent=self)
+                mb.showinfo(title="No newer version", message="You are running the latest vesion of Validator!", parent=self)
 
     def init_state(self):
         self.df = None
@@ -774,31 +774,45 @@ class DataVisualizationWindow(tk.Toplevel):
         self.geometry("860x580")
         self.title("Data Visualization")
 
+        def plot(var, index, mode):
+            self.plot(df)
+
+        self.columns = util.get_df_columns(df)
+
         self.col = tk.StringVar()
-        self.col.trace_add("write", callback=self.plot)
+        self.col.trace_add("write", callback=plot)
 
         self.control_frame = tk.Frame(self, borderwidth=2, relief="groove")
         self.control_frame.pack(fill=tk.X)
         self.column_chooser = ttk.Combobox(self.control_frame, textvariable=self.col, state="readonly")
         self.column_chooser.pack(fill=tk.X)
-        self.column_chooser['values'] = util.get_df_columns(df)
+        self.column_chooser['values'] = self.columns
 
         self.focus()
         self.grab_set()
 
-    def plot(self, var, index, mode):
+    def plot(self, df):
 
         self.destroy_plot_widgets()
 
         self.fig = Figure(figsize = (5, 5), dpi = 100)
         self.plt = self.fig.add_subplot(111)
         
-        data = np.random.randn(1000)
+        try:
+            #data_min_y = data_min_x = 0
+            data = [float(v.replace(',', '.')) for v in df[self.col.get()]]
+            #data_max_x = max(data)
+            #data_max_y = data.count(util.most_frequent_item(data))
+        except ValueError:
+            data = df[self.col.get()]
+            #data_max_y = data_max_x = 10
         self.plt.hist(data, bins=30, color='skyblue', edgecolor='black')
 
         self.plt.set_xlabel('Values')
         self.plt.set_ylabel('Frequency')
         self.plt.set_title(self.col.get())
+        #self.plt.set_xticks(np.arange(data_min_x, data_max_x+1, 1.0))
+        #self.plt.set_yticks(np.arange(data_min_y, data_max_y+1, 1.0))
         
         self.canvas = FigureCanvasTkAgg(self.fig, self)  
         self.canvas.draw()

@@ -229,3 +229,6 @@ def import_from_xml(filename):
             values.append(v.text)
         xml_rules.append((column_to_check, rule_name, values))
     return xml_rules
+
+def most_frequent_item(List):
+    return max(set(List), key=List.count)
