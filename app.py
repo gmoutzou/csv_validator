@@ -15,7 +15,7 @@ import v_config as cfg
 import v_pgdev as pgdev
 import v_rule_library as vlib
 import pyperclip
-#import numpy as np
+import numpy as np
 from v_engine import RuleEngine
 from tkinter import Tk
 from tkinter import ttk
@@ -30,7 +30,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.3.1"
+        self.version="2.3.3"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -797,7 +797,7 @@ class DataVisualizationWindow(tk.Toplevel):
 
         self.fig = Figure(figsize = (5, 5), dpi = 100)
         self.plt = self.fig.add_subplot(111)
-        
+        """
         try:
             #data_min_y = data_min_x = 0
             data = [float(v.replace(',', '.')) for v in df[self.col.get()]]
@@ -806,13 +806,23 @@ class DataVisualizationWindow(tk.Toplevel):
         except ValueError:
             data = df[self.col.get()]
             #data_max_y = data_max_x = 10
-        self.plt.hist(data, bins=30, color='skyblue', edgecolor='black')
+        #data = df[self.col.get()].value_counts()
+        self.plt.hist(data, bins=np.arange(min(data), max(data)+1), align='mid', color='skyblue', edgecolor='black')
+
+        
+        #self.plt.set_xticks(np.arange(data_min_x, data_max_x+1, 1.0))
+        #self.plt.set_yticks(np.arange(data_min_y, data_max_y+1, 1.0))
+        """
+
+        data = df[self.col.get()].value_counts()
+        values = data.index.to_list()
+        frequency = data.to_list()
+
+        self.plt.bar(values, frequency)
 
         self.plt.set_xlabel('Values')
         self.plt.set_ylabel('Frequency')
         self.plt.set_title(self.col.get())
-        #self.plt.set_xticks(np.arange(data_min_x, data_max_x+1, 1.0))
-        #self.plt.set_yticks(np.arange(data_min_y, data_max_y+1, 1.0))
         
         self.canvas = FigureCanvasTkAgg(self.fig, self)  
         self.canvas.draw()
