@@ -15,7 +15,7 @@ import v_config as cfg
 import v_pgdev as pgdev
 import v_rule_library as vlib
 import pyperclip
-import numpy as np
+#import numpy as np
 from v_engine import RuleEngine
 from tkinter import Tk
 from tkinter import ttk
@@ -30,7 +30,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.2.1"
+        self.version="2.3.1"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -147,6 +147,7 @@ class App(Tk):
                 self.text_area.insert(tk.END, txt_content)
                 self.disable_text_area()
                 self.show_rule_panel()
+                self.enable_export_to_excel()
                 self.enable_data_visualization()
             else:
                 self.init_state()
@@ -173,7 +174,7 @@ class App(Tk):
         self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.df))
 
     def export_to_excel(self):
-        filename = fd.SaveAs(initialfile='results.xlsx', defaultextension=".xlsx", filetypes=[("XLSX Spreadsheets","*.xlsx")])
+        filename = fd.SaveAs(initialfile='output.xlsx', defaultextension=".xlsx", filetypes=[("XLSX Spreadsheets","*.xlsx")])
         if filename:
             util.df_to_xlsx(filename.show(), self.df, self.engine.anomalies)
 
@@ -271,7 +272,6 @@ class App(Tk):
             self.text_area['bg'] = 'black'
             self.text_area['fg'] = 'white'
             self.show_exec_panel()
-            self.enable_export_to_excel()
             self.exec_label['text'] = "Execution time: " + str(end - start) + " seconds"
             self.total_label['text'] = "Total invalid values: " + str(total)
             self.text_area.insert(tk.END, txt_content)
@@ -321,7 +321,7 @@ class RulesManagementWindow(tk.Toplevel):
 
         def _export():
             if self.listbox.index("end") > 0:
-                filename = fd.SaveAs(initialfile='template.xml', defaultextension=".xml", filetypes=[("XML Documents","*.xml")])
+                filename = fd.SaveAs(initialfile='rule_panel_template.xml', defaultextension=".xml", filetypes=[("XML Documents","*.xml")])
                 if filename:
                     util.export_to_xml(filename.show(), engine)
 
