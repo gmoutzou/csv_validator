@@ -15,19 +15,22 @@ import v_config as cfg
 import v_pgdev as pgdev
 import v_rule_library as vlib
 import pyperclip
+import numpy as np
 from v_engine import RuleEngine
 from tkinter import Tk
 from tkinter import ttk
 from tkinter import filedialog as fd
 from tkinter import messagebox as mb
 from tkinter import scrolledtext
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import functools
 fp = functools.partial
 
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.1.2"
+        self.version="2.2.1"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -60,6 +63,7 @@ class App(Tk):
 
         self.utilitiesmenu = tk.Menu(self.menubar, tearoff=0)
         self.utilitiesmenu.add_command(label="RuleDB", command=self.open_ruledb_window)
+        self.utilitiesmenu.add_command(label="Data visualization", command=self.open_dv_window)
         self.menubar.add_cascade(label="Utilities", menu=self.utilitiesmenu)
 
         self.helpmenu = tk.Menu(self.menubar, tearoff=0)
@@ -74,7 +78,7 @@ class App(Tk):
         #csv file panel
         self.browse_frame = tk.Frame(self)
         self.browse_frame.pack(side=tk.TOP, fill=tk.X)
-        self.csv_label = ttk.Label(self.browse_frame, text='CSV file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
+        self.csv_label = ttk.Label(self.browse_frame, text='CSV / XLSX file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
         self.csv_entry = tk.Entry(self.browse_frame, textvariable=self.csv_file, bd=3)
         self.csv_entry.pack(side='left', expand=True, fill=tk.X)
         self.csv_button = ttk.Button(self.browse_frame, text='...', command=self.open_csv_file)
@@ -118,7 +122,7 @@ class App(Tk):
         self.text_area['bg'] = 'white'
         self.text_area['fg'] = 'blue'
         if self.csv_file.get():
-            if os.path.exists(self.csv_file.get()) and self.csv_file.get().endswith('.csv'):
+            if os.path.exists(self.csv_file.get()) and (self.csv_file.get().endswith('.csv') or self.csv_file.get().endswith('.xlsx')):
                 #sep = util.get_delimiter(self.csv_file.get())
                 self.init_state()
                 config = cfg.load_config()
@@ -134,7 +138,7 @@ class App(Tk):
                 info = info[info.index('>')+2:]
                 #info += util.csv_data_structure(df=self.df, method='describe')
                 txt_content += bar 
-                txt_content += '=          CSV file structure          =\n'
+                txt_content += '=            Data structure            =\n'
                 txt_content += bar
                 txt_content += info
                 txt_content += bar
@@ -143,6 +147,7 @@ class App(Tk):
                 self.text_area.insert(tk.END, txt_content)
                 self.disable_text_area()
                 self.show_rule_panel()
+                self.enable_data_visualization()
             else:
                 self.init_state()
                 mb.showwarning(title="Warning!", message="Invalid csv file!", parent=self)
@@ -150,7 +155,7 @@ class App(Tk):
             self.init_state() 
 
     def open_csv_file(self):
-        self.csv_file.set(fd.askopenfilename())
+        self.csv_file.set(fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV Comma Separatad Values","*.csv"), ("XLSX Spreadsheets","*.xlsx")]))
 
     def open_csv_config_window(self):
         self.config_window = ConfigWindow(self)
@@ -160,6 +165,9 @@ class App(Tk):
 
     def open_ruledb_window(self):
         self.ruledb_window = RuleDBWindow(self)
+
+    def open_dv_window(self):
+        self.dv_window = DataVisualizationWindow(self, df=self.df)
 
     def open_rules_window(self, event):
         self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.df))
@@ -199,6 +207,7 @@ class App(Tk):
         self.df = None
         self.engine = None
         self.disable_export_to_excel()
+        self.disable_data_visualization()
         self.hide_rule_panel()
         self.hide_fire_panel()
         self.hide_exec_panel()
@@ -208,6 +217,12 @@ class App(Tk):
 
     def disable_export_to_excel(self):
         self.filemenu.entryconfig("Export to Excel", state="disabled")
+
+    def enable_data_visualization(self):
+        self.utilitiesmenu.entryconfig("Data visualization", state="normal")
+
+    def disable_data_visualization(self):
+        self.utilitiesmenu.entryconfig("Data visualization", state="disabled")
 
     def disable_text_area(self):
         self.text_area.configure(state='disabled')
@@ -752,6 +767,53 @@ class NewDBRuleWindow(tk.Toplevel):
             self.function_name.set(rule[3])
             self.function_body.set(rule[4])
             self.fbody.insert(tk.END, self.function_body.get())
+
+class DataVisualizationWindow(tk.Toplevel):
+    def __init__(self, *args, df=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("860x580")
+        self.title("Data Visualization")
+
+        self.col = tk.StringVar()
+        self.col.trace_add("write", callback=self.plot)
+
+        self.control_frame = tk.Frame(self, borderwidth=2, relief="groove")
+        self.control_frame.pack(fill=tk.X)
+        self.column_chooser = ttk.Combobox(self.control_frame, textvariable=self.col, state="readonly")
+        self.column_chooser.pack(fill=tk.X)
+        self.column_chooser['values'] = util.get_df_columns(df)
+
+        self.focus()
+        self.grab_set()
+
+    def plot(self, var, index, mode):
+
+        self.destroy_plot_widgets()
+
+        self.fig = Figure(figsize = (5, 5), dpi = 100)
+        self.plt = self.fig.add_subplot(111)
+        
+        data = np.random.randn(1000)
+        self.plt.hist(data, bins=30, color='skyblue', edgecolor='black')
+
+        self.plt.set_xlabel('Values')
+        self.plt.set_ylabel('Frequency')
+        self.plt.set_title(self.col.get())
+        
+        self.canvas = FigureCanvasTkAgg(self.fig, self)  
+        self.canvas.draw()
+        self.canvas.get_tk_widget().pack(anchor=tk.W, fill=tk.X)
+
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self, pack_toolbar=False)
+        self.toolbar.update()
+
+        self.canvas.get_tk_widget().pack(anchor=tk.W, fill=tk.X)
+        self.toolbar.pack(side=tk.BOTTOM, fill=tk.X)
+
+    def destroy_plot_widgets(self):
+        for widget in self.winfo_children():
+            if isinstance(widget, tk.Canvas) or isinstance(widget, NavigationToolbar2Tk):
+                widget.destroy()
 
 if __name__ == "__main__":
     myapp = App()

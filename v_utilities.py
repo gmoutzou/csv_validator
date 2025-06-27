@@ -39,17 +39,18 @@ def print_result(anomalies):
 def get_result(anomalies):
     total = 0
     result = '=======================\nValidation check result\n=======================\n'
-    result += '\n-----------------------'
-    for k, v in anomalies.items():
-        inv = len(v)
-        total += inv
-        result += '\n[' + k + '] invalid values: ' + str(inv)
-    result += '\n-----------------------'
-    for k, v in anomalies.items():
-        result += '\n' + k + '\n'
-        for val in v:
-            result += '-> Row: ' + str(val[0]) + ', Value: ' + str(val[1]) + '\n'
-    result += '-----------------------\n'
+    if len(anomalies) > 0:
+        result += '\n-----------------------'
+        for k, v in anomalies.items():
+            inv = len(v)
+            total += inv
+            result += '\n[' + k + '] invalid values: ' + str(inv)
+        result += '\n-----------------------'
+        for k, v in anomalies.items():
+            result += '\n' + k + '\n'
+            for val in v:
+                result += '-> Row: ' + str(val[0]) + ', Value: ' + str(val[1]) + '\n'
+        result += '-----------------------\n'
     return total, result
 
 def get_delimiter(filename):
@@ -60,7 +61,10 @@ def get_delimiter(filename):
         return dialect.delimiter
 
 def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None):
-    df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type)
+    if filename.endswith('.csv'):
+        df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type)
+    elif filename.endswith('.xlsx'):
+        df = pd.read_excel(filename, dtype=object)
     return df
 
 def is_digit(n):
