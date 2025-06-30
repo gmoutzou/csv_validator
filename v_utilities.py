@@ -14,8 +14,6 @@ import requests
 import xml.etree.ElementTree as ET
 from v_pgdev import Pgdev
 from xlsxwriter.color import Color
-from sklearn.ensemble import IsolationForest
-from sklearn.neighbors import LocalOutlierFactor
 
 def print_msg_box(msg, indent=1, width=None, title=None):
     """Print message-box with optional title."""
@@ -134,15 +132,17 @@ def df2json(filename, df):
 
 def df2xml(filename, df):
     if filename:
-        df.to_xml(filename)
+        df.to_xml(filename, parser='lxml')
 
 def df2sql(filename, df):
-    sql_statement = pd.io.sql.get_schema(df.reset_index(), 'data')
-    sql_statement += ";\n\n"
+    sql_create_statement = pd.io.sql.get_schema(df.reset_index(), 'data')
+    sql_create_statement += ";\n\n"
+    sql_insert_statements = []
     for index, row in df.iterrows():       
-        sql_statement += 'INSERT INTO '+ 'data' +' ('+ str(', '.join(df.columns))+ ') VALUES '+ str(tuple(row.values)) + ';\n'
+        sql_insert_statements.append('INSERT INTO '+ 'data' +' ('+ str(', '.join(df.columns))+ ') VALUES '+ str(tuple(row.values)) + ';\n')
     with open(filename, "w") as f:
-        f.write(sql_statement)
+        f.write(sql_create_statement)
+        f.writelines(sql_insert_statements)
 
 def get_db_import_statements(pgconf):
     rows = []
