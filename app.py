@@ -30,7 +30,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.3.3"
+        self.version="2.4.2"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -53,6 +53,9 @@ class App(Tk):
         self.filemenu.add_command(label="DB Configuration", command=self.open_db_config_window)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Export to Excel", command=self.export_to_excel)
+        self.filemenu.add_command(label="Export to Json", command=self.export_to_json)
+        self.filemenu.add_command(label="Export to Xml", command=self.export_to_xml)
+        self.filemenu.add_command(label="Export to Sql", command=self.generate_sql)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.quit)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
@@ -63,6 +66,9 @@ class App(Tk):
 
         self.utilitiesmenu = tk.Menu(self.menubar, tearoff=0)
         self.utilitiesmenu.add_command(label="RuleDB", command=self.open_ruledb_window)
+        self.utilitiesmenu.add_separator()
+        self.utilitiesmenu.add_command(label="Data structure", command=self.data_structure)
+        self.utilitiesmenu.add_command(label="Data preview", command=self.data_preview)
         self.utilitiesmenu.add_command(label="Data visualization", command=self.open_dv_window)
         self.menubar.add_cascade(label="Utilities", menu=self.utilitiesmenu)
 
@@ -81,7 +87,7 @@ class App(Tk):
         self.csv_label = ttk.Label(self.browse_frame, text='CSV / XLSX file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
         self.csv_entry = tk.Entry(self.browse_frame, textvariable=self.csv_file, bd=3)
         self.csv_entry.pack(side='left', expand=True, fill=tk.X)
-        self.csv_button = ttk.Button(self.browse_frame, text='...', command=self.open_csv_file)
+        self.csv_button = ttk.Button(self.browse_frame, text='Choose file...', command=self.open_csv_file)
         self.csv_button.pack(side='right', expand=False)
 
         #rule panel
@@ -132,23 +138,10 @@ class App(Tk):
                 self.df = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object)
                 self.df = util.get_df_as_type_string(self.df)
                 self.engine = RuleEngine(self.df)
-                txt_content = ''
-                bar = '========================================\n'
-                info = util.csv_data_structure(df=self.df, method='info')
-                info = info[info.index('>')+2:]
-                #info += util.csv_data_structure(df=self.df, method='describe')
-                txt_content += bar 
-                txt_content += '=            Data structure            =\n'
-                txt_content += bar
-                txt_content += info
-                txt_content += bar
-                self.enable_text_area()
-                self.clear_text_area()
-                self.text_area.insert(tk.END, txt_content)
-                self.disable_text_area()
+                self.data_structure()
                 self.show_rule_panel()
-                self.enable_export_to_excel()
-                self.enable_data_visualization()
+                self.enable_export_menu()
+                self.enable_data_menu()
             else:
                 self.init_state()
                 mb.showwarning(title="Warning!", message="Invalid csv file!", parent=self)
@@ -176,7 +169,47 @@ class App(Tk):
     def export_to_excel(self):
         filename = fd.SaveAs(initialfile='output.xlsx', defaultextension=".xlsx", filetypes=[("XLSX Spreadsheets","*.xlsx")])
         if filename:
-            util.df_to_xlsx(filename.show(), self.df, self.engine.anomalies)
+            util.df2xlsx(filename.show(), self.df, self.engine.anomalies)
+
+    def export_to_json(self):
+        filename = fd.SaveAs(initialfile='output.json', defaultextension=".json", filetypes=[("JSON Files","*.json")])
+        if filename:
+            util.df2json(filename.show(), self.df)
+
+    def export_to_xml(self):
+        filename = fd.SaveAs(initialfile='output.xml', defaultextension=".xml", filetypes=[("XML Files","*.xml")])
+        if filename:
+            util.df2xml(filename.show(), self.df)
+
+    def generate_sql(self):
+        filename = fd.SaveAs(initialfile='output.sql', defaultextension=".sql", filetypes=[("SQL Files","*.sql")])
+        if filename:
+            util.df2sql(filename.show(), self.df)
+
+    def data_structure(self):
+        txt_content = ''
+        bar = '========================================\n'
+        info = util.csv_data_structure(df=self.df, method='info')
+        info = info[info.index('>')+2:]
+        #info += util.csv_data_structure(df=self.df, method='describe')
+        txt_content += bar 
+        txt_content += '=            Data structure            =\n'
+        txt_content += bar
+        txt_content += info
+        txt_content += bar
+        self.text_area_style('white', 'blue')
+        self.enable_text_area()
+        self.clear_text_area()
+        self.text_area.insert(tk.END, txt_content)
+        self.disable_text_area()
+
+    def data_preview(self):
+        txt_content = util.df_preview(self.df, 10)
+        self.text_area_style('white', 'blue')
+        self.enable_text_area()
+        self.clear_text_area()
+        self.text_area.insert(tk.END, txt_content)
+        self.disable_text_area()
 
     def about_window(self):
         def close_window():
@@ -207,22 +240,32 @@ class App(Tk):
     def init_state(self):
         self.df = None
         self.engine = None
-        self.disable_export_to_excel()
-        self.disable_data_visualization()
+        self.disable_export_menu()
+        self.disable_data_menu()
         self.hide_rule_panel()
         self.hide_fire_panel()
         self.hide_exec_panel()
 
-    def enable_export_to_excel(self):
+    def enable_export_menu(self):
         self.filemenu.entryconfig("Export to Excel", state="normal")
+        self.filemenu.entryconfig("Export to Json", state="normal")
+        self.filemenu.entryconfig("Export to Xml", state="normal")
+        self.filemenu.entryconfig("Export to Sql", state="normal")
 
-    def disable_export_to_excel(self):
+    def disable_export_menu(self):
         self.filemenu.entryconfig("Export to Excel", state="disabled")
+        self.filemenu.entryconfig("Export to Json", state="disabled")
+        self.filemenu.entryconfig("Export to Xml", state="disabled")
+        self.filemenu.entryconfig("Export to Sql", state="disabled")
 
-    def enable_data_visualization(self):
+    def enable_data_menu(self):
+        self.utilitiesmenu.entryconfig("Data structure", state="normal")
+        self.utilitiesmenu.entryconfig("Data preview", state="normal")
         self.utilitiesmenu.entryconfig("Data visualization", state="normal")
 
-    def disable_data_visualization(self):
+    def disable_data_menu(self):
+        self.utilitiesmenu.entryconfig("Data structure", state="disabled")
+        self.utilitiesmenu.entryconfig("Data preview", state="disabled")
         self.utilitiesmenu.entryconfig("Data visualization", state="disabled")
 
     def disable_text_area(self):
@@ -260,6 +303,7 @@ class App(Tk):
             self.show_fire_panel()
         else:
             self.hide_fire_panel()
+            self.hide_exec_panel()
 
     def fire_all_rules(self, event):
         if self.engine and len(self.engine.rules) > 0:
@@ -269,8 +313,7 @@ class App(Tk):
             self.enable_text_area()
             self.clear_text_area()
             total, txt_content = util.get_result(self.engine.anomalies)
-            self.text_area['bg'] = 'black'
-            self.text_area['fg'] = 'white'
+            self.text_area_style('black', 'white')
             self.show_exec_panel()
             self.exec_label['text'] = "Execution time: " + str(end - start) + " seconds"
             self.total_label['text'] = "Total invalid values: " + str(total)
@@ -280,6 +323,10 @@ class App(Tk):
     def copy_to_clipboard(self):
         content = self.text_area.get("1.0", tk.END)
         pyperclip.copy(content)
+
+    def text_area_style(self, bg_color, fg_color):
+        self.text_area['bg'] = bg_color
+        self.text_area['fg'] = fg_color
 
 class RulesManagementWindow(tk.Toplevel):
     def __init__(self, *args, engine=None, columns=None, **kwargs):
@@ -808,7 +855,6 @@ class DataVisualizationWindow(tk.Toplevel):
             #data_max_y = data_max_x = 10
         #data = df[self.col.get()].value_counts()
         self.plt.hist(data, bins=np.arange(min(data), max(data)+1), align='mid', color='skyblue', edgecolor='black')
-
         
         #self.plt.set_xticks(np.arange(data_min_x, data_max_x+1, 1.0))
         #self.plt.set_yticks(np.arange(data_min_y, data_max_y+1, 1.0))

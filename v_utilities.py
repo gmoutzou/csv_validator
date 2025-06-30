@@ -14,6 +14,8 @@ import requests
 import xml.etree.ElementTree as ET
 from v_pgdev import Pgdev
 from xlsxwriter.color import Color
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
 
 def print_msg_box(msg, indent=1, width=None, title=None):
     """Print message-box with optional title."""
@@ -107,7 +109,7 @@ def csv_data_structure(df, method='describe'):
         s = df.describe()
         return s.to_string()
     
-def df_to_xlsx(filename, df, anomalies):
+def df2xlsx(filename, df, anomalies):
     if filename:
         columns = get_df_columns(df)
         with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
@@ -125,6 +127,22 @@ def df_to_xlsx(filename, df, anomalies):
                         value = val[1]
                         worksheet.write(row, col, value, cell_format)
             worksheet.set_column(0, max_col - 1, 15)
+
+def df2json(filename, df):
+    if filename:
+        df.to_json(filename, orient='records', force_ascii=False)
+
+def df2xml(filename, df):
+    if filename:
+        df.to_xml(filename)
+
+def df2sql(filename, df):
+    sql_statement = pd.io.sql.get_schema(df.reset_index(), 'data')
+    sql_statement += ";\n\n"
+    for index, row in df.iterrows():       
+        sql_statement += 'INSERT INTO '+ 'data' +' ('+ str(', '.join(df.columns))+ ') VALUES '+ str(tuple(row.values)) + ';\n'
+    with open(filename, "w") as f:
+        f.write(sql_statement)
 
 def get_db_import_statements(pgconf):
     rows = []
@@ -233,3 +251,6 @@ def import_from_xml(filename):
 
 def most_frequent_item(List):
     return max(set(List), key=List.count)
+
+def df_preview(df, n):
+    return df.head(n).to_string()
