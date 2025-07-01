@@ -8,6 +8,8 @@
 
 import re
 import math
+import time
+import v_common as common
 from v_rule import Rule
 from datetime import datetime
 from string import whitespace
@@ -101,7 +103,24 @@ rule_library.append(rule)
 #Grater than [4]
 def greater_than(value, value_range):
     if value_range:
-        return (float(value.replace(',', '.')) > float(value_range[0].replace(',', '.')))
+        if common.is_digit(value) and common.is_digit(value_range[0]):
+            return (float(value.replace(",", ".")) > float(value_range[0].replace(",", ".")))
+        elif common.is_date(value) and common.is_date(value_range[0]):
+            if len(value.split("/")) == 3:
+                value_date = time.strptime(value, "%d/%m/%Y")
+            elif len(value.split("-")) == 3:
+                value_date = time.strptime(value, "%d-%m-%Y")
+            else:
+                return False
+            if len(value_range[0].split("/")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+            elif len(value_range[0].split("-")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+            else:
+                return False
+            return (value_date > value_range_date)
+        else:
+            return (value > value_range[0])
     else:
         return True
 
@@ -112,7 +131,24 @@ rule_library.append(rule)
 #Grater or equal [5]
 def greater_or_equal(value, value_range):
     if value_range:
-        return (float(value.replace(',', '.')) >= float(value_range[0].replace(',', '.')))
+        if common.is_digit(value) and common.is_digit(value_range[0]):
+            return (float(value.replace(",", ".")) >= float(value_range[0].replace(",", ".")))
+        elif common.is_date(value) and common.is_date(value_range[0]):
+            if len(value.split("/")) == 3:
+                value_date = time.strptime(value, "%d/%m/%Y")
+            elif len(value.split("-")) == 3:
+                value_date = time.strptime(value, "%d-%m-%Y")
+            else:
+                return False
+            if len(value_range[0].split("/")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+            elif len(value_range[0].split("-")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+            else:
+                return False
+            return (value_date >= value_range_date)
+        else:
+            return (value >= value_range[0])
     else:
         return True
 
@@ -123,7 +159,24 @@ rule_library.append(rule)
 #Less than [6]
 def less_than(value, value_range):
     if value_range:
-        return (float(value.replace(',', '.')) < float(value_range[0].replace(',', '.')))
+        if common.is_digit(value) and common.is_digit(value_range[0]):
+            return (float(value.replace(",", ".")) < float(value_range[0].replace(",", ".")))
+        elif common.is_date(value) and common.is_date(value_range[0]):
+            if len(value.split("/")) == 3:
+                value_date = time.strptime(value, "%d/%m/%Y")
+            elif len(value.split("-")) == 3:
+                value_date = time.strptime(value, "%d-%m-%Y")
+            else:
+                return False
+            if len(value_range[0].split("/")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+            elif len(value_range[0].split("-")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+            else:
+                return False
+            return (value_date < value_range_date)
+        else:
+            return (value < value_range[0])
     else:
         return True
 
@@ -134,7 +187,24 @@ rule_library.append(rule)
 #Less or equal [7]
 def less_or_equal(value, value_range):
     if value_range:
-        return (float(value.replace(',', '.')) <= float(value_range[0].replace(',', '.')))
+        if common.is_digit(value) and common.is_digit(value_range[0]):
+            return (float(value.replace(",", ".")) <= float(value_range[0].replace(",", ".")))
+        elif common.is_date(value) and common.is_date(value_range[0]):
+            if len(value.split("/")) == 3:
+                value_date = time.strptime(value, "%d/%m/%Y")
+            elif len(value.split("-")) == 3:
+                value_date = time.strptime(value, "%d-%m-%Y")
+            else:
+                return False
+            if len(value_range[0].split("/")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+            elif len(value_range[0].split("-")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+            else:
+                return False
+            return (value_date <= value_range_date)
+        else:
+            return (value <= value_range[0])
     else:
         return True
 
@@ -145,7 +215,24 @@ rule_library.append(rule)
 #equal [8]
 def equal_to(value, value_range):
     if value_range:
-        return (float(value.replace(',', '.')) == float(value_range[0].replace(',', '.')))
+        if common.is_digit(value) and common.is_digit(value_range[0]):
+            return (float(value.replace(",", ".")) == float(value_range[0].replace(",", ".")))
+        elif common.is_date(value) and common.is_date(value_range[0]):
+            if len(value.split("/")) == 3:
+                value_date = time.strptime(value, "%d/%m/%Y")
+            elif len(value.split("-")) == 3:
+                value_date = time.strptime(value, "%d-%m-%Y")
+            else:
+                return False
+            if len(value_range[0].split("/")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+            elif len(value_range[0].split("-")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+            else:
+                return False
+            return (value_date == value_range_date)
+        else:
+            return (value == value_range[0])
     else:
         return True
 
@@ -156,7 +243,24 @@ rule_library.append(rule)
 #Not equal [9]
 def not_equal_to(value, value_range):
     if value_range:
-        return (float(value.replace(',', '.')) != float(value_range[0].replace(',', '.')))
+        if common.is_digit(value) and common.is_digit(value_range[0]):
+            return (float(value.replace(",", ".")) != float(value_range[0].replace(",", ".")))
+        elif common.is_date(value) and common.is_date(value_range[0]):
+            if len(value.split("/")) == 3:
+                value_date = time.strptime(value, "%d/%m/%Y")
+            elif len(value.split("-")) == 3:
+                value_date = time.strptime(value, "%d-%m-%Y")
+            else:
+                return False
+            if len(value_range[0].split("/")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+            elif len(value_range[0].split("-")) == 3:
+                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+            else:
+                return False
+            return (value_date != value_range_date)
+        else:
+            return (value != value_range[0])
     else:
         return True
 

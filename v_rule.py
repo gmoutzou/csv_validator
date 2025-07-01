@@ -13,4 +13,7 @@ class Rule():
         self.func = func
 
     def apply(self, value, value_range):
-        return self.func(value, value_range), value
+        try:
+            return self.func(value, value_range), value
+        except ValueError:
+            return (False, value)

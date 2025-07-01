@@ -30,7 +30,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.4.2"
+        self.version="2.5.1"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -53,8 +53,10 @@ class App(Tk):
         self.filemenu.add_command(label="DB Configuration", command=self.open_db_config_window)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Export to Excel", command=self.export_to_excel)
+        self.filemenu.add_command(label="Export to Csv", command=self.export_to_csv)
         self.filemenu.add_command(label="Export to Json", command=self.export_to_json)
         self.filemenu.add_command(label="Export to Xml", command=self.export_to_xml)
+        self.filemenu.add_command(label="Export to Html", command=self.export_to_html)
         self.filemenu.add_command(label="Export to Sql", command=self.generate_sql)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.quit)
@@ -84,7 +86,7 @@ class App(Tk):
         #csv file panel
         self.browse_frame = tk.Frame(self)
         self.browse_frame.pack(side=tk.TOP, fill=tk.X)
-        self.csv_label = ttk.Label(self.browse_frame, text='CSV / XLSX file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
+        self.csv_label = ttk.Label(self.browse_frame, text='CSV / XLSX / JSON file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
         self.csv_entry = tk.Entry(self.browse_frame, textvariable=self.csv_file, bd=3)
         self.csv_entry.pack(side='left', expand=True, fill=tk.X)
         self.csv_button = ttk.Button(self.browse_frame, text='Choose file...', command=self.open_csv_file)
@@ -128,7 +130,7 @@ class App(Tk):
         self.text_area['bg'] = 'white'
         self.text_area['fg'] = 'blue'
         if self.csv_file.get():
-            if os.path.exists(self.csv_file.get()) and (self.csv_file.get().endswith('.csv') or self.csv_file.get().endswith('.xlsx')):
+            if os.path.exists(self.csv_file.get()) and (self.csv_file.get().endswith('.csv') or self.csv_file.get().endswith('.xlsx') or self.csv_file.get().endswith('.json')):
                 #sep = util.get_delimiter(self.csv_file.get())
                 self.init_state()
                 config = cfg.load_config()
@@ -149,7 +151,7 @@ class App(Tk):
             self.init_state() 
 
     def open_csv_file(self):
-        self.csv_file.set(fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV Comma Separatad Values","*.csv"), ("XLSX Spreadsheets","*.xlsx")]))
+        self.csv_file.set(fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV Comma Separatad Values","*.csv"), ("XLSX Spreadsheets","*.xlsx"), ("JSON Files","*.json")]))
 
     def open_csv_config_window(self):
         self.config_window = ConfigWindow(self)
@@ -171,6 +173,11 @@ class App(Tk):
         if filename:
             util.df2xlsx(filename.show(), self.df, self.engine.anomalies)
 
+    def export_to_csv(self):
+        filename = fd.SaveAs(initialfile='output.csv', defaultextension=".csv", filetypes=[("CSV Files","*.csv")])
+        if filename:
+            util.df2csv(filename.show(), self.df)
+
     def export_to_json(self):
         filename = fd.SaveAs(initialfile='output.json', defaultextension=".json", filetypes=[("JSON Files","*.json")])
         if filename:
@@ -180,6 +187,11 @@ class App(Tk):
         filename = fd.SaveAs(initialfile='output.xml', defaultextension=".xml", filetypes=[("XML Files","*.xml")])
         if filename:
             util.df2xml(filename.show(), self.df)
+
+    def export_to_html(self):
+        filename = fd.SaveAs(initialfile='output.html', defaultextension=".html", filetypes=[("HTML Files","*.html")])
+        if filename:
+            util.df2html(filename.show(), self.df)
 
     def generate_sql(self):
         filename = fd.SaveAs(initialfile='output.sql', defaultextension=".sql", filetypes=[("SQL Files","*.sql")])
@@ -248,14 +260,18 @@ class App(Tk):
 
     def enable_export_menu(self):
         self.filemenu.entryconfig("Export to Excel", state="normal")
+        self.filemenu.entryconfig("Export to Csv", state="normal")
         self.filemenu.entryconfig("Export to Json", state="normal")
         self.filemenu.entryconfig("Export to Xml", state="normal")
+        self.filemenu.entryconfig("Export to Html", state="normal")
         self.filemenu.entryconfig("Export to Sql", state="normal")
 
     def disable_export_menu(self):
         self.filemenu.entryconfig("Export to Excel", state="disabled")
+        self.filemenu.entryconfig("Export to Csv", state="disabled")
         self.filemenu.entryconfig("Export to Json", state="disabled")
         self.filemenu.entryconfig("Export to Xml", state="disabled")
+        self.filemenu.entryconfig("Export to Html", state="disabled")
         self.filemenu.entryconfig("Export to Sql", state="disabled")
 
     def enable_data_menu(self):
@@ -710,8 +726,8 @@ class RuleDBWindow(tk.Toplevel):
         self.delbtn = tk.Button(self.control_frame, text="Delete", width=10, command=delete_selected_rule)
         self.delbtn.pack()
 
-        self.edtbtn["state"] = "disabled"
-        self.delbtn["state"] = "disabled"
+        #self.edtbtn["state"] = "disabled"
+        #self.delbtn["state"] = "disabled"
 
         #self.bind('<FocusIn>', _event_handler)
 
@@ -844,21 +860,6 @@ class DataVisualizationWindow(tk.Toplevel):
 
         self.fig = Figure(figsize = (5, 5), dpi = 100)
         self.plt = self.fig.add_subplot(111)
-        """
-        try:
-            #data_min_y = data_min_x = 0
-            data = [float(v.replace(',', '.')) for v in df[self.col.get()]]
-            #data_max_x = max(data)
-            #data_max_y = data.count(util.most_frequent_item(data))
-        except ValueError:
-            data = df[self.col.get()]
-            #data_max_y = data_max_x = 10
-        #data = df[self.col.get()].value_counts()
-        self.plt.hist(data, bins=np.arange(min(data), max(data)+1), align='mid', color='skyblue', edgecolor='black')
-        
-        #self.plt.set_xticks(np.arange(data_min_x, data_max_x+1, 1.0))
-        #self.plt.set_yticks(np.arange(data_min_y, data_max_y+1, 1.0))
-        """
 
         data = df[self.col.get()].value_counts()
         values = data.index.to_list()

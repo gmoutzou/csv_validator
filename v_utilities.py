@@ -14,6 +14,7 @@ import requests
 import xml.etree.ElementTree as ET
 from v_pgdev import Pgdev
 from xlsxwriter.color import Color
+from dateutil.parser import parse
 
 def print_msg_box(msg, indent=1, width=None, title=None):
     """Print message-box with optional title."""
@@ -45,7 +46,7 @@ def get_result(anomalies):
             inv = len(v)
             total += inv
             result += '\n[' + k + '] invalid values: ' + str(inv)
-        result += '\n-----------------------'
+        result += '\n-----------------------\n'
         for k, v in anomalies.items():
             result += '\n' + k + '\n'
             for val in v:
@@ -61,10 +62,13 @@ def get_delimiter(filename):
         return dialect.delimiter
 
 def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None):
+    df = None
     if filename.endswith('.csv'):
         df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type)
     elif filename.endswith('.xlsx'):
         df = pd.read_excel(filename, dtype=object)
+    elif filename.endswith('.json'):
+        df = pd.read_json(filename, dtype=object)
     return df
 
 def is_digit(n):
@@ -72,7 +76,14 @@ def is_digit(n):
         float(n)
         return True
     except ValueError:
-        return  False
+        return False
+    
+def is_date(string, fuzzy=False):
+    try: 
+        parse(string, fuzzy=fuzzy)
+        return True
+    except ValueError:
+        return False
 
 def get_value_range(strval):
     value_range = []
@@ -107,6 +118,10 @@ def csv_data_structure(df, method='describe'):
         s = df.describe()
         return s.to_string()
     
+def df2csv(filename, df):
+    if filename:
+        df.to_csv(filename)
+    
 def df2xlsx(filename, df, anomalies):
     if filename:
         columns = get_df_columns(df)
@@ -133,6 +148,31 @@ def df2json(filename, df):
 def df2xml(filename, df):
     if filename:
         df.to_xml(filename, parser='lxml')
+
+def df2html(filename, df):
+    if filename:
+        html = '''<!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                        <meta name="viewport" content="width=device-width,initial-scale=1">
+                        <title>output</title>
+                        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+                    </head>
+                    <body>
+                    <div class="content-body">
+                '''
+        html_table = df.to_html(classes='table table-striped table-bordered table-hover')
+        html += html_table
+        html += '''
+                </div>
+                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+                </body>
+                </html>
+                '''
+        with open(filename, "w") as f:
+            f.write(html)
 
 def df2sql(filename, df):
     sql_create_statement = pd.io.sql.get_schema(df.reset_index(), 'data')
