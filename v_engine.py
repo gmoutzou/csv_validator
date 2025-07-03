@@ -92,7 +92,7 @@ class RuleEngine():
 
             if op:
                 # Apply logic operator and reduce the results
-                aggregation_result = list(map(lambda x: self.logic_gate_apply(op, *x), results)) #unpack the function arguments using the *
+                aggregation_result = list(map(lambda x: self.logic_gate_apply(op, *x), results)) #unpack the function arguments using the asterisk
             if aggregation_result:
                 # Get the invalid values
                 for col, res in zip(colset, aggregation_result):

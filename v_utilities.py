@@ -259,8 +259,9 @@ def get_selected_rule_info(rule):
     else:
         return ()
 
-def export_to_xml(filename, engine):
+def export_to_xml_template(filename, engine):
     root = ET.Element("rules")
+    root.set('logic_gate', str(engine.logic_gate))
     for i, r in enumerate(engine.rules):
         rule = ET.SubElement(root, "rule")
         ET.SubElement(rule, "column_to_check").text = engine.columns_to_check[i]
@@ -275,7 +276,7 @@ def export_to_xml(filename, engine):
     ET.indent(tree, space="\t", level=0)
     tree.write(filename, encoding='utf-8', xml_declaration=True)
 
-def import_from_xml(filename):
+def import_from_xml_template(filename):
     xml_rules = []
     tree = ET.parse(filename)
     root = tree.getroot()
@@ -287,7 +288,7 @@ def import_from_xml(filename):
         for v in vr:
             values.append(v.text)
         xml_rules.append((column_to_check, rule_name, values))
-    return xml_rules
+    return root.attrib, xml_rules
 
 def most_frequent_item(List):
     return max(set(List), key=List.count)
