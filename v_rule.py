@@ -14,6 +14,6 @@ class Rule():
 
     def apply(self, value, value_range):
         try:
-            return self.func(value, value_range), value
+            return (value, self.func(value, value_range))
         except ValueError:
-            return (False, value)
+            return (value, False)

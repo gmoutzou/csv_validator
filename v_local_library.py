@@ -319,7 +319,7 @@ rule_library.append(rule)
 #String length between [15]
 def string_length_between(value, value_range):
     if value_range and len(value_range) == 2:
-        return (value_range[0] <= len(value) <= value_range[1])
+        return (int(value_range[0]) <= len(value) <= int(value_range[1]))
     else:
         return True
 

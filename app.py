@@ -30,7 +30,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.5.1"
+        self.version="2.5.2"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
