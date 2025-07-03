@@ -69,29 +69,18 @@ class RuleEngine():
 
     def fire_all_rules(self):
         self.anomalies.clear()
-        """ Iterate over Rows in DataFrame
-        self.df = self.df.reset_index()
-        for i, row in self.df.iterrows():
-            for j, column in enumerate(self.columns_to_check):
-                print(row[column])
-        """
-        """ Iterate over columns in DataFrame
-        for series_name, series in self.df.items():
-            if series_name == 
-            for v in series:
-                print(v)
-        """
         """ Iterate over columns_to_check and apply the corresponding rule function """
         if not self.logic_gate:
             for i, column in enumerate(self.columns_to_check):
                 column_values = self.df[column].tolist()
-                #result = list(map(self.rules[i].apply, column_values))
                 result = list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), column_values))
                 self.anomaly_detection(column, result)
         else:
             op = None
             aggregation_result = None
+            # Get unique set of columns to check
             colset = set(self.columns_to_check)
+            # Iterate over columns set and apply the corresponding rule function, group the result by column
             results = [[list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), self.df[c].tolist())) for i, c in enumerate(self.columns_to_check) if c == x] for x in colset]
 
             if self.logic_gate == "AND":
@@ -102,7 +91,9 @@ class RuleEngine():
                 op = self.gate_xor
 
             if op:
-                aggregation_result = list(map(lambda x: self.logic_gate_apply(op, *x), results))
+                # Apply logic operator and reduce the results
+                aggregation_result = list(map(lambda x: self.logic_gate_apply(op, *x), results)) #unpack the function arguments using the *
             if aggregation_result:
+                # Get the invalid values
                 for col, res in zip(colset, aggregation_result):
                     self.anomaly_detection(col, res)

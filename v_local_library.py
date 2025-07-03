@@ -103,9 +103,72 @@ rule_library.append(rule)
 #Grater than [4]
 def greater_than(value, value_range):
     if value_range:
-        if common.is_digit(value) and common.is_digit(value_range[0]):
-            return (float(value.replace(",", ".")) > float(value_range[0].replace(",", ".")))
-        elif common.is_date(value) and common.is_date(value_range[0]):
+        return (float(value.replace(",", ".")) > float(value_range[0].replace(",", ".")))
+    else:
+        return True
+
+rule = Rule(name='greater_than', descr='Check if the column values \nare greater than the given value', func=greater_than)
+rule_library.append(rule)
+##################################################################
+
+#Grater or equal [5]
+def greater_or_equal(value, value_range):
+    if value_range:
+        return (float(value.replace(",", ".")) >= float(value_range[0].replace(",", ".")))
+    else:
+        return True
+
+rule = Rule(name='greater_or_equal', descr='Check if the column values \nare greater than or equal to the given value', func=greater_or_equal)
+rule_library.append(rule)
+##################################################################
+
+#Less than [6]
+def less_than(value, value_range):
+    if value_range:
+        return (float(value.replace(",", ".")) < float(value_range[0].replace(",", ".")))
+    else:
+        return True
+
+rule = Rule(name='less_than', descr='Check if the column values \nare less than the given value', func=less_than)
+rule_library.append(rule)
+##################################################################
+
+#Less or equal [7]
+def less_or_equal(value, value_range):
+    if value_range:
+        return (float(value.replace(",", ".")) <= float(value_range[0].replace(",", ".")))
+    else:
+        return True
+
+rule = Rule(name='less_or_equal', descr='Check if the column values \nare less than or equal to the given value', func=less_or_equal)
+rule_library.append(rule)
+##################################################################
+
+#equal [8]
+def equal_to(value, value_range):
+    if value_range:
+         return (float(value.replace(",", ".")) == float(value_range[0].replace(",", ".")))
+    else:
+        return True
+
+rule = Rule(name='equal_to', descr='Check if the column values \nare equal to the given value', func=equal_to)
+rule_library.append(rule)
+##################################################################
+
+#Not equal [9]
+def not_equal_to(value, value_range):
+    if value_range:
+        return (float(value.replace(",", ".")) != float(value_range[0].replace(",", ".")))
+    else:
+        return True
+
+rule = Rule(name='not_equal_to', descr='Check if the column values \nare not equal to the given value', func=not_equal_to)
+rule_library.append(rule)
+##################################################################
+#Grater than date [10]
+def greater_than_date(value, value_range):
+    if value_range:
+        if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
                 value_date = time.strptime(value, "%d/%m/%Y")
             elif len(value.split("-")) == 3:
@@ -124,16 +187,14 @@ def greater_than(value, value_range):
     else:
         return True
 
-rule = Rule(name='greater_than', descr='Check if the column values \nare greater than the given value', func=greater_than)
+rule = Rule(name='greater_than_date', descr='Check if the column date values \nare greater than the given date value', func=greater_than_date)
 rule_library.append(rule)
 ##################################################################
 
-#Grater or equal [5]
-def greater_or_equal(value, value_range):
+#Grater or equal date [11]
+def greater_or_equal_date(value, value_range):
     if value_range:
-        if common.is_digit(value) and common.is_digit(value_range[0]):
-            return (float(value.replace(",", ".")) >= float(value_range[0].replace(",", ".")))
-        elif common.is_date(value) and common.is_date(value_range[0]):
+        if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
                 value_date = time.strptime(value, "%d/%m/%Y")
             elif len(value.split("-")) == 3:
@@ -152,16 +213,14 @@ def greater_or_equal(value, value_range):
     else:
         return True
 
-rule = Rule(name='greater_or_equal', descr='Check if the column values \nare greater than or equal to the given value', func=greater_or_equal)
+rule = Rule(name='greater_or_equal_date', descr='Check if the column date values \nare greater than or equal to the given date value', func=greater_or_equal_date)
 rule_library.append(rule)
 ##################################################################
 
-#Less than [6]
-def less_than(value, value_range):
+#Less than date [12]
+def less_than_date(value, value_range):
     if value_range:
-        if common.is_digit(value) and common.is_digit(value_range[0]):
-            return (float(value.replace(",", ".")) < float(value_range[0].replace(",", ".")))
-        elif common.is_date(value) and common.is_date(value_range[0]):
+        if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
                 value_date = time.strptime(value, "%d/%m/%Y")
             elif len(value.split("-")) == 3:
@@ -180,16 +239,14 @@ def less_than(value, value_range):
     else:
         return True
 
-rule = Rule(name='less_than', descr='Check if the column values \nare less than the given value', func=less_than)
+rule = Rule(name='less_than_date', descr='Check if the column date values \nare less than the given date value', func=less_than_date)
 rule_library.append(rule)
 ##################################################################
 
-#Less or equal [7]
-def less_or_equal(value, value_range):
+#Less or equal date [13]
+def less_or_equal_date(value, value_range):
     if value_range:
-        if common.is_digit(value) and common.is_digit(value_range[0]):
-            return (float(value.replace(",", ".")) <= float(value_range[0].replace(",", ".")))
-        elif common.is_date(value) and common.is_date(value_range[0]):
+        if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
                 value_date = time.strptime(value, "%d/%m/%Y")
             elif len(value.split("-")) == 3:
@@ -208,16 +265,14 @@ def less_or_equal(value, value_range):
     else:
         return True
 
-rule = Rule(name='less_or_equal', descr='Check if the column values \nare less than or equal to the given value', func=less_or_equal)
+rule = Rule(name='less_or_equal_date', descr='Check if the column date values \nare less than or equal to the given date value', func=less_or_equal_date)
 rule_library.append(rule)
 ##################################################################
 
-#equal [8]
-def equal_to(value, value_range):
+#equal to date [14]
+def equal_to_date(value, value_range):
     if value_range:
-        if common.is_digit(value) and common.is_digit(value_range[0]):
-            return (float(value.replace(",", ".")) == float(value_range[0].replace(",", ".")))
-        elif common.is_date(value) and common.is_date(value_range[0]):
+        if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
                 value_date = time.strptime(value, "%d/%m/%Y")
             elif len(value.split("-")) == 3:
@@ -236,16 +291,14 @@ def equal_to(value, value_range):
     else:
         return True
 
-rule = Rule(name='equal_to', descr='Check if the column values \nare equal to the given value', func=equal_to)
+rule = Rule(name='equal_to_date', descr='Check if the column date values \nare equal to the given date value', func=equal_to_date)
 rule_library.append(rule)
 ##################################################################
 
-#Not equal [9]
-def not_equal_to(value, value_range):
+#Not equal to date [15]
+def not_equal_to_date(value, value_range):
     if value_range:
-        if common.is_digit(value) and common.is_digit(value_range[0]):
-            return (float(value.replace(",", ".")) != float(value_range[0].replace(",", ".")))
-        elif common.is_date(value) and common.is_date(value_range[0]):
+        if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
                 value_date = time.strptime(value, "%d/%m/%Y")
             elif len(value.split("-")) == 3:
@@ -264,13 +317,13 @@ def not_equal_to(value, value_range):
     else:
         return True
 
-rule = Rule(name='not_equal_to', descr='Check if the column values \nare not equal to the given value', func=not_equal_to)
+rule = Rule(name='not_equal_to_date', descr='Check if the column date values \nare not equal to the given date value', func=not_equal_to_date)
 rule_library.append(rule)
 ##################################################################
 
 #Is null [10]
 def is_null(value, value_range):
-    return (str(value) == "")
+    return (value == "")
 
 rule = Rule(name='is_null', descr='Check if the column contains null values', func=is_null)
 rule_library.append(rule)
@@ -278,7 +331,7 @@ rule_library.append(rule)
 
 #Is not null [11]
 def is_not_null(value, value_range):
-    return (not is_null(value, value_range))
+    return (value != "")
 
 rule = Rule(name='is_not_null', descr='Check if the column contains not null values', func=is_not_null)
 rule_library.append(rule)
@@ -287,7 +340,7 @@ rule_library.append(rule)
 #Is numeric [12]
 def is_numeric(value, value_range):
     try: 
-        float(str(value).replace(',', '.'))
+        float(value.replace(',', '.'))
         return True
     except:
         return False
@@ -298,11 +351,11 @@ rule_library.append(rule)
 
 #Is boolean [13]
 def is_boolean(value, value_range):
-    return (str(value) == '0' or str(value) == '1' 
-            or str(value).upper() == 'TRUE' or str(value).upper() == 'FALSE' 
-            or str(value).upper() == 'T' or str(value).upper() == 'F' 
-            or str(value).upper() == 'YES' or str(value).upper() == 'NO' 
-            or str(value).upper() == 'Y' or str(value).upper() == 'N')
+    return (value == '0' or value == '1' 
+            or value.upper() == 'TRUE' or value.upper() == 'FALSE' 
+            or value.upper() == 'T' or value.upper() == 'F' 
+            or value.upper() == 'YES' or value.upper() == 'NO' 
+            or value.upper() == 'Y' or value.upper() == 'N')
 
 rule = Rule(name='is_boolean', descr='Check if the column contains boolean values', func=is_boolean)
 rule_library.append(rule)
