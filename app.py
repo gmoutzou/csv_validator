@@ -375,13 +375,11 @@ class RulesManagementWindow(tk.Toplevel):
             filename = fd.askopenfilename(defaultextension=".xml", filetypes=[("XML Documents","*.xml")])
             if filename:
                 clear_all()
-                logical_operator, xml_rules = util.import_from_xml_template(filename)
+                root_attrib, xml_rules = util.import_from_xml_template(filename)
                 op = str(None)
-                if "logical_operator" in logical_operator:
-                    op = logical_operator['logical_operator']
-                if op == "None":
-                    engine.logical_operator = None
-                elif op == "AND" or op == "OR" or op == "XOR":
+                if "logical_operator" in root_attrib:
+                    op = root_attrib['logical_operator']
+                if op == "AND" or op == "OR" or op == "XOR":
                     engine.logical_operator = op
                 for r in vlib.get_rule_library():
                     for x in xml_rules:
@@ -391,7 +389,7 @@ class RulesManagementWindow(tk.Toplevel):
 
         def _export():
             if self.listbox.index("end") > 0:
-                filename = fd.SaveAs(initialfile='rule_panel_template.xml', defaultextension=".xml", filetypes=[("XML Documents","*.xml")])
+                filename = fd.SaveAs(initialfile='template.xml', defaultextension=".xml", filetypes=[("XML Documents","*.xml")])
                 if filename:
                     util.export_to_xml_template(filename.show(), engine)
 
