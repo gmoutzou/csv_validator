@@ -375,12 +375,14 @@ class RulesManagementWindow(tk.Toplevel):
             filename = fd.askopenfilename(defaultextension=".xml", filetypes=[("XML Documents","*.xml")])
             if filename:
                 clear_all()
-                logic_gate, xml_rules = util.import_from_xml_template(filename)
-                lg = logic_gate['logic_gate']
-                if lg == "None":
-                    engine.logic_gate = None
-                elif lg == "AND" or lg == "OR" or lg == "XOR":
-                    engine.logic_gate = lg
+                logical_operator, xml_rules = util.import_from_xml_template(filename)
+                op = str(None)
+                if "logical_operator" in logical_operator:
+                    op = logical_operator['logical_operator']
+                if op == "None":
+                    engine.logical_operator = None
+                elif op == "AND" or op == "OR" or op == "XOR":
+                    engine.logical_operator = op
                 for r in vlib.get_rule_library():
                     for x in xml_rules:
                         if r.name == x[1]:
@@ -401,29 +403,29 @@ class RulesManagementWindow(tk.Toplevel):
             if selected_rule:
                 self.new_rule_window = NewRuleWindow(self, parent=self, engine=engine, columns=columns, amendment=(selected_rule[0], self.listbox.get(selected_rule)))
 
-        def gate_and_state(var, index, mode):
-            if self.gate_and.get() == True:
-                self.gate_or.set(False)
-                self.gate_xor.set(False)
-                engine.logic_gate = "AND"
+        def operator_and_state(var, index, mode):
+            if self.operator_and.get() == True:
+                self.operator_or.set(False)
+                self.operator_xor.set(False)
+                engine.logical_operator = "AND"
             else:
-                engine.logic_gate = None
+                engine.logical_operator = None
 
-        def gate_or_state(var, index, mode):
-            if self.gate_or.get() == True:
-                self.gate_and.set(False)
-                self.gate_xor.set(False)
-                engine.logic_gate = "OR"
+        def operator_or_state(var, index, mode):
+            if self.operator_or.get() == True:
+                self.operator_and.set(False)
+                self.operator_xor.set(False)
+                engine.logical_operator = "OR"
             else:
-                engine.logic_gate = None
+                engine.logical_operator = None
 
-        def gate_xor_state(var, index, mode):
-            if self.gate_xor.get() == True:
-                self.gate_and.set(False)
-                self.gate_or.set(False)
-                engine.logic_gate = "XOR"
+        def operator_xor_state(var, index, mode):
+            if self.operator_xor.get() == True:
+                self.operator_and.set(False)
+                self.operator_or.set(False)
+                engine.logical_operator = "XOR"
             else:
-                engine.logic_gate = None
+                engine.logical_operator = None
 
         #rules frame
         self.rules_frame = tk.Frame(self)
@@ -455,20 +457,20 @@ class RulesManagementWindow(tk.Toplevel):
         self.expbtn = tk.Button(self.control_frame, text="Export", width=10, command=_export)
         self.expbtn.pack()
 
-        self.gate_and = tk.BooleanVar()
-        self.gate_or = tk.BooleanVar()
-        self.gate_xor = tk.BooleanVar()
+        self.operator_and = tk.BooleanVar()
+        self.operator_or = tk.BooleanVar()
+        self.operator_xor = tk.BooleanVar()
 
-        self.gate_and.trace_add("write", callback=gate_and_state)
-        self.gate_or.trace_add("write", callback=gate_or_state)
-        self.gate_xor.trace_add("write", callback=gate_xor_state)
+        self.operator_and.trace_add("write", callback=operator_and_state)
+        self.operator_or.trace_add("write", callback=operator_or_state)
+        self.operator_xor.trace_add("write", callback=operator_xor_state)
 
-        self.gate_and_check = tk.Checkbutton(self.control_frame, text="AND", variable=self.gate_and, onvalue=True, offvalue=False)
-        self.gate_and_check.pack(anchor=tk.W, pady=5)
-        self.gate_or_check = tk.Checkbutton(self.control_frame, text="OR", variable=self.gate_or, onvalue=True, offvalue=False)
-        self.gate_or_check.pack(anchor=tk.W, pady=5)
-        self.gate_xor_check = tk.Checkbutton(self.control_frame, text="XOR", variable=self.gate_xor, onvalue=True, offvalue=False)
-        self.gate_xor_check.pack(anchor=tk.W, pady=5)
+        self.operator_and_check = tk.Checkbutton(self.control_frame, text="AND", variable=self.operator_and, onvalue=True, offvalue=False)
+        self.operator_and_check.pack(anchor=tk.W, pady=5)
+        self.operator_or_check = tk.Checkbutton(self.control_frame, text="OR", variable=self.operator_or, onvalue=True, offvalue=False)
+        self.operator_or_check.pack(anchor=tk.W, pady=5)
+        self.operator_xor_check = tk.Checkbutton(self.control_frame, text="XOR", variable=self.operator_xor, onvalue=True, offvalue=False)
+        self.operator_xor_check.pack(anchor=tk.W, pady=5)
 
         _listbox_fill()
 
@@ -484,21 +486,21 @@ class RulesManagementWindow(tk.Toplevel):
 
     def listbox_clear(self):
         self.listbox.delete(0, tk.END)
-        self.gate_and.set(False)
-        self.gate_or.set(False)
-        self.gate_xor.set(False)
+        self.operator_and.set(False)
+        self.operator_or.set(False)
+        self.operator_xor.set(False)
 
     def listbox_fill(self, engine):
         for i, r in enumerate(engine.rules):
             vr = ','.join(engine.acceptable_values[i])
             vr = ': ' + vr if vr else ''
             self.listbox.insert(tk.END, str(i+1) + ') ' + engine.columns_to_check[i] + ' -> ' + r.name + vr)
-        if engine.logic_gate == "AND":
-            self.gate_and.set(True)
-        elif engine.logic_gate == "OR":
-            self.gate_or.set(True)
-        elif engine.logic_gate == "XOR":
-            self.gate_xor.set(True)
+        if engine.logical_operator == "AND":
+            self.operator_and.set(True)
+        elif engine.logical_operator == "OR":
+            self.operator_or.set(True)
+        elif engine.logical_operator == "XOR":
+            self.operator_xor.set(True)
 
 class NewRuleWindow(tk.Toplevel):
     def __init__(self, *args, parent=None, engine=None, columns=None, amendment=None, **kwargs):

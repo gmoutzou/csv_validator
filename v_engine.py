@@ -15,7 +15,7 @@ class RuleEngine():
         self.columns_to_check = []
         self.acceptable_values = []
         self.anomalies = {}
-        self.logic_gate = None
+        self.logical_operator = None
         self.df = df
     
     def add_rule(self, rule, column, value_range):
@@ -41,22 +41,22 @@ class RuleEngine():
             else:
                 self.anomalies[column] += invalid_list
 
-    def gate_and(self, x, y):
+    def op_and(self, x, y):
         #res = [(lambda f, s: (f[0], f[1] and s[1]))(j, k) for j, k in zip(x, y)] #lambda function in list comprehension#
         res = [(j[0], j[1] and k[1]) for j, k in zip(x, y)]
         return res
     
-    def gate_or(self, x, y):
+    def op_or(self, x, y):
         #res = [(lambda f, s: (f[0], f[1] or s[1]))(j, k) for j, k in zip(x, y)] #lambda function in list comprehension#
         res = [(j[0], j[1] or k[1]) for j, k in zip(x, y)]
         return res
     
-    def gate_xor(self, x, y):
+    def op_xor(self, x, y):
         #res = [(lambda f, s: (f[0], f[1] != s[1]))(j, k) for j, k in zip(x, y)] #lambda function in list comprehension#
         res = [(j[0], j[1] != k[1]) for j, k in zip(x, y)]
         return res
 
-    def logic_gate_apply(self, op, *argv):
+    def logical_operator_apply(self, op, *argv):
         res = functools.reduce(op, argv)
         return res
 
@@ -65,12 +65,12 @@ class RuleEngine():
         self.columns_to_check.clear()
         self.acceptable_values.clear()
         self.anomalies.clear()
-        self.logic_gate = None
+        self.logical_operator = None
 
     def fire_all_rules(self):
         self.anomalies.clear()
         """ Iterate over columns_to_check and apply the corresponding rule function """
-        if not self.logic_gate:
+        if not self.logical_operator:
             for i, column in enumerate(self.columns_to_check):
                 column_values = self.df[column].tolist()
                 result = list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), column_values))
@@ -83,16 +83,16 @@ class RuleEngine():
             # Iterate over columns set and apply the corresponding rule function, group the result by column
             results = [[list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), self.df[c].tolist())) for i, c in enumerate(self.columns_to_check) if c == x] for x in colset]
 
-            if self.logic_gate == "AND":
-                op = self.gate_and
-            elif self.logic_gate =="OR":
-                op = self.gate_or
-            elif self.logic_gate =="XOR":
-                op = self.gate_xor
+            if self.logical_operator == "AND":
+                op = self.op_and
+            elif self.logical_operator =="OR":
+                op = self.op_or
+            elif self.logical_operator =="XOR":
+                op = self.op_xor
 
             if op:
-                # Apply logic operator and reduce the results
-                aggregation_result = list(map(lambda x: self.logic_gate_apply(op, *x), results)) #unpack the function arguments using the asterisk
+                # Apply logical operator and reduce the results
+                aggregation_result = list(map(lambda x: self.logical_operator_apply(op, *x), results)) #unpack the function arguments using the asterisk
             if aggregation_result:
                 # Get the invalid values
                 for col, res in zip(colset, aggregation_result):

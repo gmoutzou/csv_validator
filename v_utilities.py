@@ -261,7 +261,7 @@ def get_selected_rule_info(rule):
 
 def export_to_xml_template(filename, engine):
     root = ET.Element("rules")
-    root.set('logic_gate', str(engine.logic_gate))
+    root.set('logical_operator', str(engine.logical_operator))
     for i, r in enumerate(engine.rules):
         rule = ET.SubElement(root, "rule")
         ET.SubElement(rule, "column_to_check").text = engine.columns_to_check[i]

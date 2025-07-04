@@ -649,3 +649,33 @@ def afm_check(afm, value_range):
 rule = Rule(name='is_valid_afm', descr='Check if the column contains valid AFM numbers', func=afm_check)
 rule_library.append(rule)
 ##################################################################
+
+#IBAN check [29]
+def iban_check(value, value_range):
+    if not value:
+        return False
+    
+    if len(value) != 27:
+        return False
+        
+    key = 55
+    divisor = 97
+    
+    value = value.strip().upper()
+    
+    country_code = value[:2]
+    check_digit = value[2:4]
+    fcc = str(ord(country_code[:1]) - key)
+    scc = str(ord(country_code[1:2]) - key)
+    first4chars = fcc + scc + check_digit
+    
+    number_value = int(value[4:] + first4chars)
+    
+    if number_value % divisor == 1:
+      return True
+      
+    return False
+
+rule = Rule(name='is_valid_greek_iban', descr='Check if the column contains valid Greek IBAN numbers', func=iban_check)
+rule_library.append(rule)
+##################################################################
