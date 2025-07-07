@@ -539,7 +539,8 @@ class NewRuleWindow(tk.Toplevel):
         self.vr_label.grid(row=0, column=2, sticky=tk.W)
 
         self.column_chooser = ttk.Combobox(self.control_frame, textvariable=self.col, state="readonly")
-        self.column_chooser['values'] = columns
+        col = ["<<ALL>>"] + columns
+        self.column_chooser['values'] = col
         self.rule_chooser = ttk.Combobox(self.control_frame, textvariable=self.rule_name, state="readonly", width=25)
         self.rule_chooser['values'] = [r.name for r in vlib.get_rule_library()]
         self.vr_entry = tk.Entry(self.control_frame, textvariable=self.vr, bd=3)

@@ -19,9 +19,14 @@ class RuleEngine():
         self.df = df
     
     def add_rule(self, rule, column, value_range):
-        self.rules.append(rule)
-        self.columns_to_check.append(column)
-        self.acceptable_values.append(value_range)
+        if column == "<<ALL>>":
+            all_columns = list(self.df)
+            for c in all_columns:
+                self.add_rule(rule, c, value_range)
+        else:
+            self.rules.append(rule)
+            self.columns_to_check.append(column)
+            self.acceptable_values.append(value_range)
 
     def delete_rule(self, index):
         del self.rules[index]
