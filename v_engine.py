@@ -16,6 +16,7 @@ class RuleEngine():
         self.acceptable_values = []
         self.anomalies = {}
         self.logical_operator = None
+        self.outlier_detection_time = 0.0
         self.df = df
     
     def add_rule(self, rule, column, value_range):
@@ -71,6 +72,10 @@ class RuleEngine():
         self.acceptable_values.clear()
         self.anomalies.clear()
         self.logical_operator = None
+
+    def clear_outliers(self):
+        self.anomalies.clear()
+        self.outlier_detection_time = 0.0
 
     def fire_all_rules(self):
         self.anomalies.clear()

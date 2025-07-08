@@ -6,15 +6,17 @@
 # georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
-import io, os
+import io, os, sys
 import csv
 import pandas as pd
 import numpy as np
 import requests
 import xml.etree.ElementTree as ET
+import v_common as common
 from v_pgdev import Pgdev
 from xlsxwriter.color import Color
 from dateutil.parser import parse
+from sklearn.ensemble import IsolationForest
 
 def print_msg_box(msg, indent=1, width=None, title=None):
     """Print message-box with optional title."""
@@ -295,3 +297,55 @@ def most_frequent_item(List):
 
 def df_preview(df, n):
     return df.head(n).to_string()
+
+def detect_outliers_iqr(df, column, k=1.5, return_thresholds=False):
+    # Get column data as np array from dataframe
+    #min_float = -sys.float_info.max
+    min_val = -999999.999
+    data = df[column].map(lambda x: float(x.replace(',', '.')) if common.is_digit(x.replace(',', '.')) else min_val)
+    #data = data.to_numpy()
+
+    # Calculate quartiles
+    q25, q75 = np.percentile(data, [25, 75])
+
+    # Calculate the IQR
+    iqr = q75 - q25
+
+    # Calculate the outlier cutoff
+    cutoff = iqr * k
+
+    # Calculate the lower and upper bounds
+    lower_bound, upper_bound = q25 - cutoff, q75 + cutoff
+
+    if return_thresholds:
+        return lower_bound, upper_bound
+    else:
+        # Identify outliers
+        result = np.logical_or(data < lower_bound, data > upper_bound)
+        return result
+    
+def detect_outliers_iso_forest(df, column, n_estimators=100, contamination=0.01, sample_size=256):
+    #min_float = np.finfo(np.float64).min
+    min_val = -999999.999
+    data = df[column].map(lambda x: float(x.replace(',', '.')) if common.is_digit(x.replace(',', '.')) else min_val)
+    #data = np.array(d.values.tolist(), dtype=np.float64).reshape(-1, 1)
+    data = data.to_numpy(dtype=np.float32).reshape(-1, 1)
+    
+    iso_forest = IsolationForest(n_estimators=n_estimators,
+                            contamination=contamination,
+                            max_samples=sample_size,
+                            random_state=42)
+    iso_forest.fit(data)
+    #anomaly_score = iso_forest.decision_function(data)
+    anomalies = iso_forest.fit_predict(data)
+    result = np.where(anomalies > 0, False, True)
+    #result = list(zip(df[column].to_list(), anomalies.tolist()))
+    return result
+
+def detect_outliers_ensemble_model(df, column):
+    outliers = detect_outliers_iqr(df, column)
+    anomalies = detect_outliers_iso_forest(df, column)
+    outliers_and_anomalies = np.logical_and(outliers, anomalies)
+    outliers_and_anomalies = np.invert(outliers_and_anomalies).tolist()
+    result = list(zip(df[column].to_list(), outliers_and_anomalies))
+    return result

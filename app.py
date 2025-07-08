@@ -30,7 +30,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.7.0"
+        self.version="2.8.1"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -72,6 +72,8 @@ class App(Tk):
         self.utilitiesmenu.add_command(label="Data structure", command=self.data_structure)
         self.utilitiesmenu.add_command(label="Data preview", command=self.data_preview)
         self.utilitiesmenu.add_command(label="Data visualization", command=self.open_dv_window)
+        self.utilitiesmenu.add_separator()
+        self.utilitiesmenu.add_command(label="Outlier detection (Ensemble model)", command=self.open_od_window)
         self.menubar.add_cascade(label="Utilities", menu=self.utilitiesmenu)
 
         self.helpmenu = tk.Menu(self.menubar, tearoff=0)
@@ -164,6 +166,9 @@ class App(Tk):
 
     def open_dv_window(self):
         self.dv_window = DataVisualizationWindow(self, df=self.df)
+
+    def open_od_window(self):
+        self.od_window = OutlierDetectionWindow(self, df=self.df, engine=self.engine)
 
     def open_rules_window(self, event):
         self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.df))
@@ -278,11 +283,13 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Data structure", state="normal")
         self.utilitiesmenu.entryconfig("Data preview", state="normal")
         self.utilitiesmenu.entryconfig("Data visualization", state="normal")
+        self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="normal")
 
     def disable_data_menu(self):
         self.utilitiesmenu.entryconfig("Data structure", state="disabled")
         self.utilitiesmenu.entryconfig("Data preview", state="disabled")
         self.utilitiesmenu.entryconfig("Data visualization", state="disabled")
+        self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="disabled")
 
     def disable_text_area(self):
         self.text_area.configure(state='disabled')
@@ -314,9 +321,24 @@ class App(Tk):
     def show_exec_panel(self):
         self.exec_frame.pack(after=self.fire_frame, anchor=tk.W)
 
+    def show_exec_panel_without_fire(self):
+        self.exec_frame.pack(after=self.rule_frame, anchor=tk.W)
+
     def focus_event_handler(self, event):
-        if self.engine and len(self.engine.rules) > 0:
-            self.show_fire_panel()
+        if self.engine: 
+            if len(self.engine.rules) > 0:
+                self.show_fire_panel()
+            if len(self.engine.anomalies) > 0:
+                self.enable_text_area()
+                self.clear_text_area()
+                total, txt_content = util.get_result(self.engine.anomalies)
+                self.text_area_style('black', 'white')
+                self.text_area.insert(tk.END, txt_content)
+                self.disable_text_area()
+                self.show_exec_panel_without_fire()
+                self.exec_label['text'] = "Execution time: " + str(self.engine.outlier_detection_time) + " seconds"
+                self.total_label['text'] = "Total invalid values: " + str(total)
+
         else:
             self.hide_fire_panel()
             self.hide_exec_panel()
@@ -939,6 +961,57 @@ class DataVisualizationWindow(tk.Toplevel):
         for widget in self.winfo_children():
             if isinstance(widget, tk.Canvas) or isinstance(widget, NavigationToolbar2Tk):
                 widget.destroy()
+
+class OutlierDetectionWindow(tk.Toplevel):
+    def __init__(self, *args, df=None, engine=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("460x300")
+        self.title("Outlier Detection (Ensemble model)")
+
+        def run_process(var, index, mode):
+            start = time.time()
+            result = util.detect_outliers_ensemble_model(df, self.col.get())
+            engine.clear_outliers()
+            engine.anomaly_detection(self.col.get(), result)
+            end = time.time()
+            engine.outlier_detection_time = end - start
+            self.destroy()
+
+        self.columns = util.get_df_columns(df)
+
+        self.col = tk.StringVar()
+        self.col.trace_add("write", callback=run_process)
+
+        self.control_frame = tk.Frame(self, borderwidth=2, relief="groove")
+        self.control_frame.pack(fill=tk.X)
+        self.column_chooser = ttk.Combobox(self.control_frame, textvariable=self.col, state="readonly")
+        self.column_chooser.pack(fill=tk.X)
+        self.column_chooser['values'] = self.columns
+
+        self.descr_frame = tk.Frame(self, background='lightgrey', relief=tk.GROOVE, padx=5, pady=5)
+        self.descr_frame.pack(fill=tk.BOTH, expand=True)
+        self.descr_txt = """
+[Model #1] 
+The interquartile range (IQR) 
+is a measure of the spread of the middle 50% of the data. 
+The IQR can be calculated as the difference 
+between the 75th percentile and the 25th percentile of the dataset. 
+Any data point outside the range of 1.5 times 
+the IQR below the 25th percentile or above the 75th percentile 
+can be considered an outlier.
+
+[Model #2]
+Isolation Forest is an unsupervised machine learning algorithm 
+used for anomaly detection. It works by isolating anomalies in data 
+through a process of random partitioning using a collection of decision trees. 
+Anomalies, being different from the majority of the data, 
+are expected to be isolated with fewer partitions (shorter paths in the trees). 
+"""
+        self.descr_label = ttk.Label(self.descr_frame, text=self.descr_txt, background='lightgrey', foreground='blue')
+        self.descr_label.pack(fill=tk.X)
+
+        self.focus()
+        self.grab_set()
 
 if __name__ == "__main__":
     myapp = App()
