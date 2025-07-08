@@ -299,28 +299,18 @@ def df_preview(df, n):
     return df.head(n).to_string()
 
 def detect_outliers_iqr(df, column, k=1.5, return_thresholds=False):
-    # Get column data as np array from dataframe
     #min_float = -sys.float_info.max
     min_val = -999999.999
     data = df[column].map(lambda x: float(x.replace(',', '.')) if common.is_digit(x.replace(',', '.')) else min_val)
     #data = data.to_numpy()
-
-    # Calculate quartiles
     q25, q75 = np.percentile(data, [25, 75])
-
-    # Calculate the IQR
     iqr = q75 - q25
-
-    # Calculate the outlier cutoff
     cutoff = iqr * k
-
-    # Calculate the lower and upper bounds
     lower_bound, upper_bound = q25 - cutoff, q75 + cutoff
 
     if return_thresholds:
         return lower_bound, upper_bound
     else:
-        # Identify outliers
         result = np.logical_or(data < lower_bound, data > upper_bound)
         return result
     
