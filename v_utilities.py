@@ -327,9 +327,8 @@ def detect_outliers_iso_forest(df, column, n_estimators=100, contamination=0.01,
                             random_state=42)
     iso_forest.fit(data)
     #anomaly_score = iso_forest.decision_function(data)
-    anomalies = iso_forest.fit_predict(data)
+    anomalies = iso_forest.predict(data)
     result = np.where(anomalies > 0, False, True)
-    #result = list(zip(df[column].to_list(), anomalies.tolist()))
     return result
 
 def detect_outliers_ensemble_model(df, column):
