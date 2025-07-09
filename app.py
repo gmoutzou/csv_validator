@@ -970,7 +970,7 @@ class OutlierDetectionWindow(tk.Toplevel):
 
         def run_process(var, index, mode):
             start = time.time()
-            result = util.detect_outliers_ensemble_model(df, self.col.get())
+            result = util.detect_outliers(df, self.col.get())
             engine.clear_outliers()
             engine.anomaly_detection(self.col.get(), result)
             end = time.time()
