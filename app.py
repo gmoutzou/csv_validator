@@ -168,7 +168,7 @@ class App(Tk):
         self.dv_window = DataVisualizationWindow(self, df=self.df)
 
     def open_od_window(self):
-        self.od_window = OutlierDetectionWindow(self, df=self.df, engine=self.engine)
+        self.od_window = OutlierDetectionWindow(self, parent=self)
 
     def open_rules_window(self, event):
         self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.df))
@@ -324,21 +324,23 @@ class App(Tk):
     def show_exec_panel_without_fire(self):
         self.exec_frame.pack(after=self.rule_frame, anchor=tk.W)
 
+    def result_display(self, exec_time, exec_panel_func):
+        self.enable_text_area()
+        self.clear_text_area()
+        total, txt_content = util.get_result(self.engine.anomalies)
+        self.text_area_style('black', 'white')
+        exec_panel_func()
+        self.exec_label['text'] = "Execution time: " + str(exec_time) + " seconds"
+        self.total_label['text'] = "Total invalid values: " + str(total)
+        self.text_area.insert(tk.END, txt_content)
+        self.disable_text_area()
+
     def focus_event_handler(self, event):
         if self.engine: 
             if len(self.engine.rules) > 0:
                 self.show_fire_panel()
-            if len(self.engine.anomalies) > 0:
-                self.enable_text_area()
-                self.clear_text_area()
-                total, txt_content = util.get_result(self.engine.anomalies)
-                self.text_area_style('black', 'white')
-                self.text_area.insert(tk.END, txt_content)
-                self.disable_text_area()
-                self.show_exec_panel_without_fire()
-                self.exec_label['text'] = "Execution time: " + str(self.engine.outlier_detection_time) + " seconds"
-                self.total_label['text'] = "Total invalid values: " + str(total)
-
+            #if len(self.engine.anomalies) > 0 and self.engine.outlier_detection_time > 0.0:
+            #    self.result_display(self.engine.outlier_detection_time, self.show_exec_panel_without_fire)
         else:
             self.hide_fire_panel()
             self.hide_exec_panel()
@@ -348,15 +350,7 @@ class App(Tk):
             start = time.time()
             self.engine.fire_all_rules()
             end = time.time()
-            self.enable_text_area()
-            self.clear_text_area()
-            total, txt_content = util.get_result(self.engine.anomalies)
-            self.text_area_style('black', 'white')
-            self.show_exec_panel()
-            self.exec_label['text'] = "Execution time: " + str(end - start) + " seconds"
-            self.total_label['text'] = "Total invalid values: " + str(total)
-            self.text_area.insert(tk.END, txt_content)
-            self.disable_text_area()
+            self.result_display(end - start, self.show_exec_panel)
 
     def copy_to_clipboard(self):
         content = self.text_area.get("1.0", tk.END)
@@ -963,21 +957,22 @@ class DataVisualizationWindow(tk.Toplevel):
                 widget.destroy()
 
 class OutlierDetectionWindow(tk.Toplevel):
-    def __init__(self, *args, df=None, engine=None, **kwargs):
+    def __init__(self, *args, parent=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("460x300")
         self.title("Outlier Detection (Ensemble model)")
 
         def run_process(var, index, mode):
+            parent.engine.clear_outliers()
             start = time.time()
-            result = util.detect_outliers(df, self.col.get())
-            engine.clear_outliers()
-            engine.anomaly_detection(self.col.get(), result)
+            result = util.detect_outliers(parent.df, self.col.get())
+            parent.engine.anomaly_detection(self.col.get(), result)
             end = time.time()
-            engine.outlier_detection_time = end - start
-            self.destroy()
+            parent.engine.outlier_detection_time = end - start
+            parent.result_display(parent.engine.outlier_detection_time, parent.show_exec_panel_without_fire)
+            #self.destroy()
 
-        self.columns = util.get_df_columns(df)
+        self.columns = util.get_df_columns(parent.df)
 
         self.col = tk.StringVar()
         self.col.trace_add("write", callback=run_process)
@@ -1010,7 +1005,7 @@ are expected to be isolated with fewer partitions (shorter paths in the trees).
         self.descr_label = ttk.Label(self.descr_frame, text=self.descr_txt, background='lightgrey', foreground='blue')
         self.descr_label.pack(fill=tk.X)
 
-        self.focus()
+        #self.focus()
         self.grab_set()
 
 if __name__ == "__main__":

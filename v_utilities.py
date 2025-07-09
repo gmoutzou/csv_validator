@@ -16,7 +16,6 @@ import v_common as common
 from v_pgdev import Pgdev
 from xlsxwriter.color import Color
 from dateutil.parser import parse
-from sklearn.ensemble import IsolationForest
 from v_outlier_detector import OutlierDetector
 
 def print_msg_box(msg, indent=1, width=None, title=None):

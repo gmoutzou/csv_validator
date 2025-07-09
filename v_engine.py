@@ -70,7 +70,7 @@ class RuleEngine():
         self.rules.clear()
         self.columns_to_check.clear()
         self.acceptable_values.clear()
-        self.anomalies.clear()
+        self.clear_outliers()
         self.logical_operator = None
 
     def clear_outliers(self):
@@ -78,7 +78,7 @@ class RuleEngine():
         self.outlier_detection_time = 0.0
 
     def fire_all_rules(self):
-        self.anomalies.clear()
+        self.clear_outliers()
         """ Iterate over columns_to_check and apply the corresponding rule function """
         if not self.logical_operator:
             for i, column in enumerate(self.columns_to_check):
