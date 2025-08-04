@@ -44,7 +44,10 @@ def get_rule_library():
                 #exec("rule_library.append(rule)")
                 """ Linux & Windows version"""
                 exec_str = row[4] + "\n" + f"rule=Rule(name='{row[1]}', descr='{row[2]}', func={row[3]})" + "\n" + "rule_library.append(rule)"      
-                exec(exec_str)
+                try:
+                    exec(exec_str)
+                except:
+                     pass
     return rule_library    
 
 #################################################################

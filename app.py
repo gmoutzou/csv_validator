@@ -148,7 +148,7 @@ class App(Tk):
                 self.enable_data_menu()
             else:
                 self.init_state()
-                mb.showwarning(title="Warning!", message="Invalid csv file!", parent=self)
+                mb.showwarning(title="Warning!", message="Invalid file!", parent=self)
         else:
             self.init_state() 
 

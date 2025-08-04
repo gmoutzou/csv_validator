@@ -170,15 +170,39 @@ def greater_than_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
-                value_date = time.strptime(value, "%d/%m/%Y")
+                try:
+                  value_date = time.strptime(value, "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_date = time.strptime(value, "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value.split("-")) == 3:
+              try:
                 value_date = time.strptime(value, "%d-%m-%Y")
+              except ValueError:
+                try:
+                  value_date = time.strptime(value, "%Y-%m-%d")
+                except ValueError:
+                  return False
             else:
                 return False
             if len(value_range[0].split("/")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value_range[0].split("-")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y-%m-%d")
+                  except ValueError:
+                    return False
             else:
                 return False
             return (value_date > value_range_date)
@@ -196,15 +220,39 @@ def greater_or_equal_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
-                value_date = time.strptime(value, "%d/%m/%Y")
+                try:
+                  value_date = time.strptime(value, "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_date = time.strptime(value, "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value.split("-")) == 3:
+              try:
                 value_date = time.strptime(value, "%d-%m-%Y")
+              except ValueError:
+                try:
+                  value_date = time.strptime(value, "%Y-%m-%d")
+                except ValueError:
+                  return False
             else:
                 return False
             if len(value_range[0].split("/")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value_range[0].split("-")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y-%m-%d")
+                  except ValueError:
+                    return False
             else:
                 return False
             return (value_date >= value_range_date)
@@ -222,15 +270,39 @@ def less_than_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
-                value_date = time.strptime(value, "%d/%m/%Y")
+                try:
+                  value_date = time.strptime(value, "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_date = time.strptime(value, "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value.split("-")) == 3:
+              try:
                 value_date = time.strptime(value, "%d-%m-%Y")
+              except ValueError:
+                try:
+                  value_date = time.strptime(value, "%Y-%m-%d")
+                except ValueError:
+                  return False
             else:
                 return False
             if len(value_range[0].split("/")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value_range[0].split("-")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y-%m-%d")
+                  except ValueError:
+                    return False
             else:
                 return False
             return (value_date < value_range_date)
@@ -248,15 +320,39 @@ def less_or_equal_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
-                value_date = time.strptime(value, "%d/%m/%Y")
+                try:
+                  value_date = time.strptime(value, "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_date = time.strptime(value, "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value.split("-")) == 3:
+              try:
                 value_date = time.strptime(value, "%d-%m-%Y")
+              except ValueError:
+                try:
+                  value_date = time.strptime(value, "%Y-%m-%d")
+                except ValueError:
+                  return False
             else:
                 return False
             if len(value_range[0].split("/")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value_range[0].split("-")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y-%m-%d")
+                  except ValueError:
+                    return False
             else:
                 return False
             return (value_date <= value_range_date)
@@ -274,15 +370,39 @@ def equal_to_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
-                value_date = time.strptime(value, "%d/%m/%Y")
+                try:
+                  value_date = time.strptime(value, "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_date = time.strptime(value, "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value.split("-")) == 3:
+              try:
                 value_date = time.strptime(value, "%d-%m-%Y")
+              except ValueError:
+                try:
+                  value_date = time.strptime(value, "%Y-%m-%d")
+                except ValueError:
+                  return False
             else:
                 return False
             if len(value_range[0].split("/")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value_range[0].split("-")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y-%m-%d")
+                  except ValueError:
+                    return False
             else:
                 return False
             return (value_date == value_range_date)
@@ -300,15 +420,39 @@ def not_equal_to_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
             if len(value.split("/")) == 3:
-                value_date = time.strptime(value, "%d/%m/%Y")
+                try:
+                  value_date = time.strptime(value, "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_date = time.strptime(value, "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value.split("-")) == 3:
+              try:
                 value_date = time.strptime(value, "%d-%m-%Y")
+              except ValueError:
+                try:
+                  value_date = time.strptime(value, "%Y-%m-%d")
+                except ValueError:
+                  return False
             else:
                 return False
             if len(value_range[0].split("/")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d/%m/%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y/%m/%d")
+                  except ValueError:
+                    return False
             elif len(value_range[0].split("-")) == 3:
-                value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                try:
+                  value_range_date = time.strptime(value_range[0], "%d-%m-%Y")
+                except ValueError:
+                  try:
+                    value_range_date = time.strptime(value_range[0], "%Y-%m-%d")
+                  except ValueError:
+                    return False
             else:
                 return False
             return (value_date != value_range_date)
@@ -625,20 +769,20 @@ def afm_check(afm, value_range):
     #afm = str(afm)
 
     if len(afm) != 9:
-        return False
+      return False
 
     if not re.match(r"^\d+$", afm):
-        return False
+      return False
 
     if afm == "0" * 9:
-        return False
+      return False
 
     body = afm[:8]
     sum = 0
     
     for i in range(len(body)):
-        digit = body[i]
-        sum += int(digit) << (8 - i)
+      digit = body[i]
+      sum += int(digit) << (8 - i)
     
     calc = sum % 11
     d9 = int(afm[8])
@@ -664,6 +808,8 @@ def iban_check(value, value_range):
     value = value.strip().upper()
     
     country_code = value[:2]
+    if country_code != "GR":
+        return False 
     check_digit = value[2:4]
     fcc = str(ord(country_code[:1]) - key)
     scc = str(ord(country_code[1:2]) - key)
@@ -672,10 +818,42 @@ def iban_check(value, value_range):
     number_value = int(value[4:] + first4chars)
     
     if number_value % divisor == 1:
-      return True
+        return True
       
     return False
 
 rule = Rule(name='is_valid_greek_iban', descr='Check if the column contains valid Greek IBAN numbers', func=iban_check)
+rule_library.append(rule)
+##################################################################
+
+#RF code check [29]
+def rf_check(value, value_range):
+    if not value:
+        return False
+    
+    if len(value) != 27:
+        return False
+        
+    key = 55
+    divisor = 97
+    
+    value = value.strip().upper()
+    
+    rf_code = value[:2]
+    if rf_code != "RF":
+        return False 
+    check_digit = value[2:4]
+    fcc = str(ord(rf_code[:1]) - key)
+    scc = str(ord(rf_code[1:2]) - key)
+    first4chars = fcc + scc + check_digit
+    
+    number_value = int(value[4:] + first4chars)
+    
+    if number_value % divisor == 1:
+        return True
+      
+    return False
+
+rule = Rule(name='is_valid_rf_code', descr='Check if the column contains valid RF code values', func=rf_check)
 rule_library.append(rule)
 ##################################################################
