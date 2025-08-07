@@ -56,7 +56,7 @@ rule_library.clear()
 
 ##################################################################
 
-#In value range [0]
+# In value range [0]
 def in_value_range(value, value_range):
     if value_range and len(value_range) == 2:
         return (float(value.replace(',', '.')) >= float(value_range[0].replace(',', '.')) and float(value.replace(',', '.')) <= float(value_range[1].replace(',', '.')))
@@ -67,7 +67,7 @@ rule = Rule(name='in_value_range', descr='Check if the column values \nare in th
 rule_library.append(rule)
 ##################################################################
 
-#In acceptable values [1]
+# In acceptable values [1]
 def in_acceptable_values(value, value_range):
     if value_range:
         return (value in value_range)
@@ -78,7 +78,7 @@ rule = Rule(name='in_acceptable_values', descr='Check if the column contains \no
 rule_library.append(rule)
 ##################################################################
 
-#In value range [2]
+# In value range [2]
 def not_in_value_range(value, value_range):
     if value_range and len(value_range) == 2:
         return not (float(value.replace(',', '.')) >= float(value_range[0].replace(',', '.')) and float(value.replace(',', '.')) <= float(value_range[1].replace(',', '.')))
@@ -89,7 +89,7 @@ rule = Rule(name='not_in_value_range', descr='Check if the column values \nare n
 rule_library.append(rule)
 ##################################################################
 
-#Not acceptable values [3]
+# Not acceptable values [3]
 def not_acceptable_values(value, value_range):
     if value_range:
         return not (value in value_range)
@@ -100,7 +100,7 @@ rule = Rule(name='not_acceptable_values', descr='Check if the column contains \n
 rule_library.append(rule)
 ##################################################################
 
-#Grater than [4]
+# Grater than [4]
 def greater_than(value, value_range):
     if value_range:
         return (float(value.replace(",", ".")) > float(value_range[0].replace(",", ".")))
@@ -111,7 +111,7 @@ rule = Rule(name='greater_than', descr='Check if the column values \nare greater
 rule_library.append(rule)
 ##################################################################
 
-#Grater or equal [5]
+# Grater or equal [5]
 def greater_or_equal(value, value_range):
     if value_range:
         return (float(value.replace(",", ".")) >= float(value_range[0].replace(",", ".")))
@@ -122,7 +122,7 @@ rule = Rule(name='greater_or_equal', descr='Check if the column values \nare gre
 rule_library.append(rule)
 ##################################################################
 
-#Less than [6]
+# Less than [6]
 def less_than(value, value_range):
     if value_range:
         return (float(value.replace(",", ".")) < float(value_range[0].replace(",", ".")))
@@ -133,7 +133,7 @@ rule = Rule(name='less_than', descr='Check if the column values \nare less than 
 rule_library.append(rule)
 ##################################################################
 
-#Less or equal [7]
+# Less or equal [7]
 def less_or_equal(value, value_range):
     if value_range:
         return (float(value.replace(",", ".")) <= float(value_range[0].replace(",", ".")))
@@ -144,7 +144,7 @@ rule = Rule(name='less_or_equal', descr='Check if the column values \nare less t
 rule_library.append(rule)
 ##################################################################
 
-#equal [8]
+# equal [8]
 def equal_to(value, value_range):
     if value_range:
          return (float(value.replace(",", ".")) == float(value_range[0].replace(",", ".")))
@@ -155,7 +155,7 @@ rule = Rule(name='equal_to', descr='Check if the column values \nare equal to th
 rule_library.append(rule)
 ##################################################################
 
-#Not equal [9]
+# Not equal [9]
 def not_equal_to(value, value_range):
     if value_range:
         return (float(value.replace(",", ".")) != float(value_range[0].replace(",", ".")))
@@ -165,7 +165,8 @@ def not_equal_to(value, value_range):
 rule = Rule(name='not_equal_to', descr='Check if the column values \nare not equal to the given value', func=not_equal_to)
 rule_library.append(rule)
 ##################################################################
-#Grater than date [10]
+
+# Grater than date [10]
 def greater_than_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
@@ -215,7 +216,7 @@ rule = Rule(name='greater_than_date', descr='Check if the column date values \na
 rule_library.append(rule)
 ##################################################################
 
-#Grater or equal date [11]
+# Grater or equal date [11]
 def greater_or_equal_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
@@ -265,7 +266,7 @@ rule = Rule(name='greater_or_equal_date', descr='Check if the column date values
 rule_library.append(rule)
 ##################################################################
 
-#Less than date [12]
+# Less than date [12]
 def less_than_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
@@ -315,7 +316,7 @@ rule = Rule(name='less_than_date', descr='Check if the column date values \nare 
 rule_library.append(rule)
 ##################################################################
 
-#Less or equal date [13]
+# Less or equal date [13]
 def less_or_equal_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
@@ -365,7 +366,7 @@ rule = Rule(name='less_or_equal_date', descr='Check if the column date values \n
 rule_library.append(rule)
 ##################################################################
 
-#equal to date [14]
+# equal to date [14]
 def equal_to_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
@@ -415,7 +416,7 @@ rule = Rule(name='equal_to_date', descr='Check if the column date values \nare e
 rule_library.append(rule)
 ##################################################################
 
-#Not equal to date [15]
+# Not equal to date [15]
 def not_equal_to_date(value, value_range):
     if value_range:
         if common.is_date(value) and common.is_date(value_range[0]):
@@ -465,7 +466,7 @@ rule = Rule(name='not_equal_to_date', descr='Check if the column date values \na
 rule_library.append(rule)
 ##################################################################
 
-#Is null [10]
+# Is null [16]
 def is_null(value, value_range):
     return (value == "")
 
@@ -473,7 +474,7 @@ rule = Rule(name='is_null', descr='Check if the column contains null values', fu
 rule_library.append(rule)
 ##################################################################
 
-#Is not null [11]
+# Is not null [17]
 def is_not_null(value, value_range):
     return (value != "")
 
@@ -481,7 +482,7 @@ rule = Rule(name='is_not_null', descr='Check if the column contains not null val
 rule_library.append(rule)
 ##################################################################
 
-#Is numeric [12]
+# Is numeric [18]
 def is_numeric(value, value_range):
     try: 
         float(value.replace(',', '.'))
@@ -493,7 +494,7 @@ rule = Rule(name='is_numeric', descr='Check if the column contains numeric value
 rule_library.append(rule)
 ##################################################################
 
-#Is boolean [13]
+# Is boolean [19]
 def is_boolean(value, value_range):
     return (value == '0' or value == '1' 
             or value.upper() == 'TRUE' or value.upper() == 'FALSE' 
@@ -505,7 +506,7 @@ rule = Rule(name='is_boolean', descr='Check if the column contains boolean value
 rule_library.append(rule)
 ##################################################################
 
-#Is string [14]
+# Is string [20]
 def is_string(value, value_range):
     return isinstance(value, str)
 
@@ -513,7 +514,7 @@ rule = Rule(name='is_string', descr='Check if the column contains string values'
 rule_library.append(rule)
 ##################################################################
 
-#String length between [15]
+# String length between [21]
 def string_length_between(value, value_range):
     if value_range and len(value_range) == 2:
         return (int(value_range[0]) <= len(value) <= int(value_range[1]))
@@ -524,7 +525,7 @@ rule = Rule(name='string_length_between', descr='Check if the column contains st
 rule_library.append(rule)
 ##################################################################
 
-#Starts with [16]
+# Starts with [22]
 def starts_with(value, value_range):
     if value_range:
         for s in value_range:
@@ -538,7 +539,7 @@ rule = Rule(name='starts_with', descr='Check if the column contains values \nwhi
 rule_library.append(rule)
 ##################################################################
 
-#Ends with [17]
+# Ends with [23]
 def ends_with(value, value_range):
     if value_range:
         for s in value_range:
@@ -552,7 +553,7 @@ rule = Rule(name='ends_with', descr='Check if the column contains values \nwhich
 rule_library.append(rule)
 ##################################################################
 
-#Not starts with [18]
+# Not starts with [24]
 def not_starts_with(value, value_range):
     if value_range:
         for s in value_range:
@@ -566,7 +567,7 @@ rule = Rule(name='not_starts_with', descr='Check if the column contains values \
 rule_library.append(rule)
 ##################################################################
 
-#Not ends with [19]
+# Not ends with [25]
 def not_ends_with(value, value_range):
     if value_range:
         for s in value_range:
@@ -579,7 +580,7 @@ def not_ends_with(value, value_range):
 rule = Rule(name='not_ends_with', descr='Check if the column contains values \nwhich not end with one of the given values (e.g. GR,GRE,GRC)', func=not_ends_with)
 rule_library.append(rule)
 ##################################################################
-#No leading whitespace [20]
+# No leading whitespace [26]
 def no_leading_whitespace(value, value_range):
     if value:
         return not (value[0] in whitespace)
@@ -590,7 +591,7 @@ rule = Rule(name='no_leading_whitespace', descr='Check if the column contains va
 rule_library.append(rule)
 ##################################################################
 
-#No trailing whitespace [21]
+# No trailing whitespace [27]
 def no_trailing_whitespace(value, value_range):
     if value:
         return not (value[-1] in whitespace)
@@ -601,7 +602,7 @@ rule = Rule(name='no_trailing_whitespace', descr='Check if the column contains v
 rule_library.append(rule)
 ##################################################################
 
-#No inner space [22]
+# No inner space [28]
 def no_inner_space(value, value_range):
     if value:
         return not (len(value.strip().split()) > 1)
@@ -612,7 +613,7 @@ rule = Rule(name='no_inner_space', descr='Check if the column contains values \n
 rule_library.append(rule)
 ##################################################################
 
-#No inner multiple spaces [23]
+# No inner multiple spaces [29]
 def no_inner_multispace(value, value_range):
     if value:
         space = 0
@@ -632,7 +633,7 @@ rule = Rule(name='no_inner_multispace', descr='Check if the column contains valu
 rule_library.append(rule)
 ##################################################################
 
-#No space [24]
+# No space [30]
 def no_space(value, value_range):
     return not (' ' in value)
 
@@ -640,7 +641,7 @@ rule = Rule(name='no_space', descr='Check if the column contains values \nwhich 
 rule_library.append(rule)
 ##################################################################
 
-#Matches decimal format [25]
+# Matches decimal format [31]
 def matches_decimal_format(value, value_range):
     return True if value and (len(value.split(',')[-1]) == 2) else False
 
@@ -648,7 +649,7 @@ rule = Rule(name='matches_decimal_format', descr='Check if the column contains v
 rule_library.append(rule)
 ##################################################################
 
-#Matches date format with slashes [26]
+# Matches date format with slashes [32]
 def valid_date_slash_format(value, value_range):
     res = True
     format = "%d/%m/%Y"
@@ -666,7 +667,7 @@ rule = Rule(name='valid_date_slash_format', descr='Check if the column values ma
 rule_library.append(rule)
 ##################################################################
 
-#Matches date format with dashes [27]
+# Matches date format with dashes [33]
 def valid_date_dash_format(value, value_range):
     res = True
     format = "%d-%m-%Y"
@@ -684,7 +685,7 @@ rule = Rule(name='valid_date_dash_format', descr='Check if the column values mat
 rule_library.append(rule)
 ##################################################################
 
-#AMKA check [28]
+# AMKA check [34]
 def amka_check(amka, value_range):
 
     #amka = str(amka)
@@ -752,7 +753,7 @@ rule = Rule(name='is_valid_amka', descr='Check if the column contains valid AMKA
 rule_library.append(rule)
 ##################################################################
 
-#AFM check [29]
+# AFM check [35]
 def afm_check(afm, value_range):
     """Checks if the passed AFM is a valid AFM number
 
@@ -794,7 +795,7 @@ rule = Rule(name='is_valid_afm', descr='Check if the column contains valid AFM n
 rule_library.append(rule)
 ##################################################################
 
-#IBAN check [29]
+# IBAN check [36]
 def iban_check(value, value_range):
     if not value:
         return False
@@ -826,7 +827,7 @@ rule = Rule(name='is_valid_greek_iban', descr='Check if the column contains vali
 rule_library.append(rule)
 ##################################################################
 
-#RF code check [29]
+# RF code check [37]
 def rf_check(value, value_range):
     if not value:
         return False
@@ -855,5 +856,43 @@ def rf_check(value, value_range):
     return False
 
 rule = Rule(name='is_valid_rf_code', descr='Check if the column contains valid RF code values', func=rf_check)
+rule_library.append(rule)
+##################################################################
+
+# String contains only letters [38]
+def is_alphabetic_string(value, value_range):
+    if value:
+      if re.match("^[A-Za-z]*$", value):
+        return True
+      else:
+        return False
+    else:
+      return False
+rule = Rule(name='is_alphabetic_string', descr='Check if the column values \nare alphabetic strings', func=is_alphabetic_string)
+rule_library.append(rule)
+##################################################################
+
+# String contains only letters and numbers [39]
+def is_alphanumeric_string(value, value_range):
+    if value:
+      if re.match("^[A-Za-z0-9]*$", value):
+        return True
+      else:
+        return False
+    else:
+      return False
+rule = Rule(name='is_alphanumeric_string', descr='Check if the column values \nare alphanumeric strings', func=is_alphanumeric_string)
+rule_library.append(rule)
+##################################################################
+
+# String contains only latin characters [40]
+def only_latin_characters(value, value_range):
+    if value:
+      latin = re.sub(r"[^a-zA-Z]", "", value)
+      alpha = "".join([c for c in value if c.isalpha()])
+      return (len(latin) == len(alpha))
+    else:
+      return False
+rule = Rule(name='only_latin_characters', descr='Check if the column values \ncontain only latin characters', func=only_latin_characters)
 rule_library.append(rule)
 ##################################################################

@@ -30,7 +30,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.8.2"
+        self.version="2.8.3"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -336,11 +336,8 @@ class App(Tk):
         self.disable_text_area()
 
     def focus_event_handler(self, event):
-        if self.engine: 
-            if len(self.engine.rules) > 0:
-                self.show_fire_panel()
-            #if len(self.engine.anomalies) > 0 and self.engine.outlier_detection_time > 0.0:
-            #    self.result_display(self.engine.outlier_detection_time, self.show_exec_panel_without_fire)
+        if self.engine and len(self.engine.rules) > 0:
+            self.show_fire_panel()
         else:
             self.hide_fire_panel()
             self.hide_exec_panel()
