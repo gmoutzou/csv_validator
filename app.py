@@ -123,7 +123,7 @@ class App(Tk):
         self.text_area.pack(fill=tk.BOTH, expand=tk.TRUE)
         self.disable_text_area()
 
-        self.bind('<FocusIn>', self.focus_event_handler)
+        #self.bind('<FocusIn>', self.focus_event_handler)
 
         self.init_state()
         self.check_for_updates(infomsg=False)
@@ -171,7 +171,7 @@ class App(Tk):
         self.od_window = OutlierDetectionWindow(self, parent=self)
 
     def open_rules_window(self, event):
-        self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.df))
+        self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.df), parent=self)
 
     def export_to_excel(self):
         filename = fd.SaveAs(initialfile='output.xlsx', defaultextension=".xlsx", filetypes=[("XLSX Spreadsheets","*.xlsx")])
@@ -335,7 +335,7 @@ class App(Tk):
         self.text_area.insert(tk.END, txt_content)
         self.disable_text_area()
 
-    def focus_event_handler(self, event):
+    def rule_handler(self):
         if self.engine and len(self.engine.rules) > 0:
             self.show_fire_panel()
         else:
@@ -358,14 +358,18 @@ class App(Tk):
         self.text_area['fg'] = fg_color
 
 class RulesManagementWindow(tk.Toplevel):
-    def __init__(self, *args, engine=None, columns=None, **kwargs):
+    def __init__(self, *args, engine=None, columns=None, parent=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("560x280")
         self.title("Rules panel")
 
-        def _event_handler(event):
-            _listbox_clear()
-            _listbox_fill()
+        def destroy_event_handler(event):
+            if parent and isinstance(event.widget, RulesManagementWindow):
+                parent.rule_handler()
+
+        #def _event_handler(event):
+        #    _listbox_clear()
+        #    _listbox_fill()
 
         def _listbox_clear():
             self.listbox_clear()
@@ -486,6 +490,7 @@ class RulesManagementWindow(tk.Toplevel):
         _listbox_fill()
 
         #self.bind('<FocusIn>', _event_handler)
+        self.bind('<Destroy>', destroy_event_handler)
 
         #self.focus()
         self.wait_visibility()
