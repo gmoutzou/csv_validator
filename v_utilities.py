@@ -31,7 +31,22 @@ def print_msg_box(msg, indent=1, width=None, title=None):
     box += ''.join([f'║{space}{line:<{width}}{space}║\n' for line in lines])
     box += f'╚{"═" * (width + indent * 2)}╝'  #lower_border
     return box
-    
+
+def header_box(msg, width=100, character='=', centered=True):
+    box = ''
+    msg_ary = msg.split('\n')
+    if centered:
+        message = ' '.join(msg_ary[len(msg_ary) // 2:]).center(width, ' ')
+    else:
+        message = ' '.join(msg_ary[len(msg_ary) // 2:])
+    box += character * (width + 4) + '\n'
+    if centered:
+        box += character + f' {message} ' + character + '\n'
+    else:
+        box += f'{message}' + '\n'
+    box += character * (width + 4) + '\n'
+    return box
+
 def print_result(anomalies):
     print_msg_box('Validation check result')
     for k, v in anomalies.items():
@@ -41,19 +56,20 @@ def print_result(anomalies):
 
 def get_result(anomalies):
     total = 0
-    result = '=======================\nValidation check result\n=======================\n'
+    #result = '=======================\nValidation check result\n=======================\n'
+    result = header_box('Validation check result')
+    header = '\n'
+    data = '\n'
     if len(anomalies) > 0:
-        result += '\n-----------------------'
         for k, v in anomalies.items():
             inv = len(v)
             total += inv
-            result += '\n[' + k + '] invalid values: ' + str(inv)
-        result += '\n-----------------------\n'
-        for k, v in anomalies.items():
-            result += '\n' + k + '\n'
+            header += header_box(msg='[' + k + '] invalid values: ' + str(inv), width=50, character='-')
+            #header += '\n-----------------------'
+            data += '\n' + k + '\n'
             for val in v:
-                result += '-> Row: ' + str(val[0]) + ', Value: ' + str(val[1]) + '\n'
-        result += '-----------------------\n'
+                data += '-> Row: ' + str(val[0]) + ', Value: ' + str(val[1]) + '\n'
+        result += header + data + '-------\n'
     return total, result
 
 def get_delimiter(filename):
