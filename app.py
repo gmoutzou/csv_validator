@@ -30,7 +30,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="2.8.3"
+        self.version="3.0.0"
         self.release = "beta"
         self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -50,6 +50,7 @@ class App(Tk):
 
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="CSV Configuration", command=self.open_csv_config_window)
+        self.filemenu.add_command(label="JL10 Configuration", command=self.open_jl10_config_window)
         self.filemenu.add_command(label="DB Configuration", command=self.open_db_config_window)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Export to Excel", command=self.export_to_excel)
@@ -88,7 +89,7 @@ class App(Tk):
         #csv file panel
         self.browse_frame = tk.Frame(self)
         self.browse_frame.pack(side=tk.TOP, fill=tk.X)
-        self.csv_label = ttk.Label(self.browse_frame, text='CSV / XLSX / JSON file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
+        self.csv_label = ttk.Label(self.browse_frame, text='CSV / XLSX / JSON / JL10 (jlx) file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
         self.csv_entry = tk.Entry(self.browse_frame, textvariable=self.csv_file, bd=3)
         self.csv_entry.pack(side='left', expand=True, fill=tk.X)
         self.csv_button = ttk.Button(self.browse_frame, text='Choose file...', command=self.open_csv_file)
@@ -132,20 +133,25 @@ class App(Tk):
         self.text_area['bg'] = 'white'
         self.text_area['fg'] = 'blue'
         if self.csv_file.get():
-            if os.path.exists(self.csv_file.get()) and (self.csv_file.get().endswith('.csv') or self.csv_file.get().endswith('.xlsx') or self.csv_file.get().endswith('.json')):
+            if os.path.exists(self.csv_file.get()) and (self.csv_file.get().endswith('.csv') or self.csv_file.get().endswith('.xlsx') or self.csv_file.get().endswith('.json') or self.csv_file.get().endswith('.jlx')):
                 #sep = util.get_delimiter(self.csv_file.get())
                 self.init_state()
                 config = cfg.load_config()
                 sep = config['delimiter']
                 hdr = 'infer' if config['header'] == 'True' else None
                 enc = config['encoding']
-                self.df = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object)
-                self.df = util.get_df_as_type_string(self.df)
-                self.engine = RuleEngine(self.df)
-                self.data_structure()
-                self.show_rule_panel()
-                self.enable_export_menu()
-                self.enable_data_menu()
+                jl10_config = cfg.load_config(section='JL10')
+                jl10_spec = jl10_config['specification']
+                self.df = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jl10_spec=jl10_spec)
+                if self.df is not None:
+                    self.df = util.get_df_as_type_string(self.df)
+                    self.engine = RuleEngine(self.df)
+                    self.data_structure()
+                    self.show_rule_panel()
+                    self.enable_export_menu()
+                    self.enable_data_menu()
+                else:
+                    mb.showwarning(title="Warning!", message="Something went wrong with file reading!", parent=self)
             else:
                 self.init_state()
                 mb.showwarning(title="Warning!", message="Invalid file!", parent=self)
@@ -153,10 +159,13 @@ class App(Tk):
             self.init_state() 
 
     def open_csv_file(self):
-        self.csv_file.set(fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV Comma Separatad Values","*.csv"), ("XLSX Spreadsheets","*.xlsx"), ("JSON Files","*.json")]))
+        self.csv_file.set(fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV Comma Separatad Values","*.csv"), ("XLSX Spreadsheets","*.xlsx"), ("JSON Files","*.json"), ("JL10 Files","*.jlx")]))
 
     def open_csv_config_window(self):
         self.config_window = ConfigWindow(self)
+
+    def open_jl10_config_window(self):
+        self.jl10_config_window = JL10ConfigWindow(self)
 
     def open_db_config_window(self):
         self.dbconfig_window = DBConfigWindow(self)
@@ -635,6 +644,39 @@ class ConfigWindow(tk.Toplevel):
         config['header'] = self.header.get()
         config['encoding'] = self.encoding.get()
         cfg.write_config(config=config)
+        self.destroy()
+
+class JL10ConfigWindow(tk.Toplevel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("460x180")
+        self.title("JL10 Configuration")
+
+        self.spec_panel = tk.Frame(self)
+        self.spec_panel.pack(fill=tk.X)
+        self.specification_label = ttk.Label(self.spec_panel, text='JL10 specification:')
+        self.specification_label.pack(anchor=tk.W, padx=5, fill=tk.X)
+        self.text_widget = tk.Text(self.spec_panel, height=9)
+        self.text_widget.insert(tk.END, (cfg.load_config(filename='config.ini', section='JL10')['specification']).replace('|', '\n'))
+        self.text_widget.pack(anchor=tk.W, fill=tk.X, padx=5)
+
+        self.save_panel = tk.Frame(self)
+        self.save_panel.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
+        self.savebtn = ttk.Button(self.save_panel, text='Save')
+        self.savebtn.pack(fill=tk.X)
+        self.savebtn.bind('<Button-1>', self.save_and_exit)
+
+    def save_and_exit(self, event):
+        config = {}
+        new_spec = self.text_widget.get(1.0, "end-1c")
+        new_spec_list = new_spec.split('\n')
+        clean_spec_list = []
+        for record in new_spec_list:
+            if ':' in record:
+                clean_spec_list.append(record)
+        new_spec = '|'.join(clean_spec_list)
+        config['specification'] = new_spec
+        cfg.write_config(filename='config.ini', section='JL10', config=config)
         self.destroy()
 
 class DBConfigWindow(tk.Toplevel):

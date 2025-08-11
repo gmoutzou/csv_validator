@@ -79,7 +79,7 @@ def get_delimiter(filename):
         dialect = sniffer.sniff(f.readline())
         return dialect.delimiter
 
-def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None):
+def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None, jl10_spec=None):
     df = None
     if filename.endswith('.csv'):
         df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type)
@@ -87,6 +87,8 @@ def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', typ
         df = pd.read_excel(filename, dtype=object)
     elif filename.endswith('.json'):
         df = pd.read_json(filename, dtype=object)
+    elif filename.endswith('.jlx'):
+        df = jl10_to_dataframe(filename, jl10_spec)
     return df
 
 def is_digit(n):
@@ -321,3 +323,31 @@ def detect_outliers(df, column):
     outliers_and_anomalies = detector.detect_outliers_ensemble_model()
     result = list(zip(df[column].to_list(), outliers_and_anomalies))
     return result
+
+def jl10_to_dataframe(filename, jl10_spec):
+    df = None
+    try:
+        jl10_spec_dict = {}
+        jl10_spec_list = jl10_spec.split('|')
+        for rec_spec in jl10_spec_list:
+            rid = rec_spec.split(':')[0]
+            rdata = rec_spec.split(':')[1]
+            jl10_spec_dict[rid] = rdata
+        with open(filename, 'r') as file:
+            data = []
+            for record in file:
+                if record[0] in jl10_spec_dict and '-' not in jl10_spec_dict[record[0]]:
+                    col_spec_list = jl10_spec_dict[record[0]].split(',')
+                    start = 0
+                    rdict = {}
+                    for i, c in enumerate(col_spec_list):
+                        colname = 'Column-' + str(i)
+                        end = start + int(c)
+                        coldata = record[start:end]
+                        rdict[colname] = coldata
+                        start = end
+                    data.append(rdict)
+            df = pd.DataFrame(data)
+    except:
+        pass
+    return df
