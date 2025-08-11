@@ -89,7 +89,7 @@ class App(Tk):
         #csv file panel
         self.browse_frame = tk.Frame(self)
         self.browse_frame.pack(side=tk.TOP, fill=tk.X)
-        self.csv_label = ttk.Label(self.browse_frame, text='CSV / XLSX / JSON / JL10 (jlx) file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
+        self.csv_label = ttk.Label(self.browse_frame, text='CSV / XLSX / JSON / JL10 file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
         self.csv_entry = tk.Entry(self.browse_frame, textvariable=self.csv_file, bd=3)
         self.csv_entry.pack(side='left', expand=True, fill=tk.X)
         self.csv_button = ttk.Button(self.browse_frame, text='Choose file...', command=self.open_csv_file)
