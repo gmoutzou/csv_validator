@@ -329,10 +329,12 @@ def jl10_to_dataframe(filename, jl10_spec):
     try:
         jl10_spec_dict = {}
         jl10_spec_list = jl10_spec.split('|')
-        for rec_spec in jl10_spec_list:
-            rid = rec_spec.split(':')[0]
-            rdata = rec_spec.split(':')[1]
-            jl10_spec_dict[rid] = rdata
+        for r_spec in jl10_spec_list:
+            r_spec_list = r_spec.split(':')
+            if len(r_spec_list) == 2:
+                rid = r_spec_list[0]
+                rdata = r_spec_list[1]
+                jl10_spec_dict[rid] = rdata
         with open(filename, 'r') as file:
             data = []
             for record in file:
