@@ -896,3 +896,25 @@ def only_latin_characters(value, value_range):
 rule = Rule(name='only_latin_characters', descr='Check if the column values \ncontain only latin characters', func=only_latin_characters)
 rule_library.append(rule)
 ##################################################################
+
+# Matches date format digits only [41]
+def valid_date_digits_only_format(value, value_range):
+    if len(value) == 8 and common.is_digit(value):
+      res = True
+      format = "%d/%m/%Y"
+      pattern_str = r'^\d{2}/\d{2}/\d{4}$'
+      value = value[-2:] + '/' + value[4:6] + '/' + value[:4]
+      if re.match(pattern_str, value):
+          try:
+              res = bool(datetime.strptime(value, format))
+          except:
+              res = False
+      else:
+          res = False
+      return res
+    else:
+       return False
+
+rule = Rule(name='valid_date_digits_only_format', descr='Check if the column values match with date format YYYYMMDD', func=valid_date_digits_only_format)
+rule_library.append(rule)
+##################################################################
