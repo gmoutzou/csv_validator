@@ -125,7 +125,6 @@ def main(engine):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(ADDR)
         server.listen()
-        print(f"*** Server IP4 addresses: {util.ip4_addresses()} ***")
         print(f"[+] Server listening on {IP}:{PORT}")
         while RUNFLAG:
             #print(f"[+] Waiting for client connection...")

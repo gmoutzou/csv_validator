@@ -407,8 +407,9 @@ class App(Tk):
         self.text_area['fg'] = fg_color
 
     def enable_server_mode(self):
-        self.title(self.init_title + " [Server mode]")
         if self.df is None and self.engine is None and self.server_thread is None:
+            print(f"*** Server IP4 addresses: {util.ip4_addresses()} ***")
+            self.title(self.init_title + " [Server mode]")
             self.filemenu.entryconfig("Enable server mode", state="disabled")
             self.filemenu.entryconfig("Disable server mode", state="normal")
             self.hide_browse_panel()
@@ -417,7 +418,7 @@ class App(Tk):
             self.server_thread = threading.Thread(target=server.main, args=(self.engine,))
             self.server_thread.daemon = True
             self.server_thread.start()
-
+            
     def disable_server_mode(self):
         if self.server_thread:
             self.show_browse_panel()

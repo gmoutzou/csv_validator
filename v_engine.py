@@ -17,10 +17,11 @@ class RuleEngine():
         self.columns_to_check = []
         self.acceptable_values = []
         self.anomalies = {}
-        self.process_flag = False
+        #self.process_flag = False
+        #self.cv = threading.Condition()
+        self.lock = threading.RLock()
         self.result_cursor = 0
         self.data_cursor = 0
-        self.cv = threading.Condition()
         self.logical_operator = None
         self.outlier_detection_time = 0.0
         self.df = df
@@ -47,33 +48,35 @@ class RuleEngine():
 
     def anomaly_detection(self, column, result, is_dictionary=False):
         if is_dictionary:
-            self.cv.acquire()
-            while self.process_flag:
-                self.cv.wait()
-            self.process_flag = True
-            for k, v in result.items():
-                invalid_list = [tuple(val) for val in v]
-                if not k in self.anomalies:
-                    self.anomalies[k] = invalid_list
-                else:
-                    self.anomalies[k] += invalid_list
-            self.process_flag = False
-            self.cv.notify_all()
-            self.cv.release()
+            #self.cv.acquire()
+            #while self.process_flag:
+            #    self.cv.wait()
+            #self.process_flag = True
+            with self.lock:
+                for k, v in result.items():
+                    invalid_list = [tuple(val) for val in v]
+                    if not k in self.anomalies:
+                        self.anomalies[k] = invalid_list
+                    else:
+                        self.anomalies[k] += invalid_list
+            #self.process_flag = False
+            #self.cv.notify_all()
+            #self.cv.release()
         else:
             invalid_list = [(i+1+self.result_cursor, t[0]) for i, t in enumerate(result) if t[1] == False]
             if invalid_list:
-                self.cv.acquire()
-                while self.process_flag:
-                    self.cv.wait()
-                self.process_flag = True
-                if not column in self.anomalies:
-                    self.anomalies[column] = invalid_list
-                else:
-                    self.anomalies[column] += invalid_list
-                self.process_flag = False
-                self.cv.notify_all()
-                self.cv.release()
+                #self.cv.acquire()
+                #while self.process_flag:
+                #    self.cv.wait()
+                #self.process_flag = True
+                with self.lock:
+                    if not column in self.anomalies:
+                        self.anomalies[column] = invalid_list
+                    else:
+                        self.anomalies[column] += invalid_list
+                #self.process_flag = False
+                #self.cv.notify_all()
+                #self.cv.release()
 
     def op_and(self, x, y):
         #res = [(lambda f, s: (f[0], f[1] and s[1]))(j, k) for j, k in zip(x, y)] #lambda function in list comprehension#
@@ -108,7 +111,7 @@ class RuleEngine():
 
     def parallel_init(self):
         self.clear_outliers()
-        self.process_flag = False
+        #self.process_flag = False
         self.result_cursor = 0
         self.data_cursor = 0
 
