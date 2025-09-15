@@ -9,6 +9,7 @@
 
 from configparser import ConfigParser
 
+
 def load_config(filename='config.ini', section='csv'):
     parser = ConfigParser()
     parser.read(filename)

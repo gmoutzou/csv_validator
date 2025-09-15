@@ -8,6 +8,7 @@
 
 from dateutil.parser import parse
 
+
 def is_digit(n):
     try:
         float(n)

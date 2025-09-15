@@ -9,6 +9,7 @@
 import numpy as np
 from sklearn.ensemble import IsolationForest
 
+
 class OutlierDetector():
     def __init__(self, data):
         self.data = data

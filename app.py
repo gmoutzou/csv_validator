@@ -1,3 +1,5 @@
+#!/home/dev/anaconda3/envs/tensorflow/bin/python3
+"""#!/bin/python3"""
 #
 # project: CSV Validator
 #
@@ -6,7 +8,7 @@
 # georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
-import os
+import os, sys
 import time
 import tkinter as tk
 import tkinter.font
@@ -14,7 +16,10 @@ import v_utilities as util
 import v_config as cfg
 import v_pgdev as pgdev
 import v_rule_library as vlib
+import v_server as server
+import v_client as client
 import pyperclip
+import threading
 import numpy as np
 from v_engine import RuleEngine
 from tkinter import Tk
@@ -27,18 +32,21 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationTool
 import functools
 fp = functools.partial
 
+
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="3.0.1"
+        self.version="4.0.1"
         self.release = "beta"
-        self.title("CSV File Validator v" + self.version + ' (' + self.release + ')')
+        self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
         self.geometry("1024x640")
         self.resizable(False, False)
 
         self.df = None
         self.engine = None
+        self.server_thread = None
+        self.server_list = []
 
         # Create the application variables
         self.csv_file = tk.StringVar()
@@ -49,6 +57,9 @@ class App(Tk):
         self.menubar = tk.Menu(master=self)
 
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
+        self.filemenu.add_command(label="Enable server mode", command=self.enable_server_mode)
+        self.filemenu.add_command(label="Disable server mode", command=self.disable_server_mode)
+        self.filemenu.add_separator()
         self.filemenu.add_command(label="CSV Configuration", command=self.open_csv_config_window)
         self.filemenu.add_command(label="JL10 Configuration", command=self.open_jl10_config_window)
         self.filemenu.add_command(label="DB Configuration", command=self.open_db_config_window)
@@ -60,7 +71,7 @@ class App(Tk):
         self.filemenu.add_command(label="Export to Html", command=self.export_to_html)
         self.filemenu.add_command(label="Export to Sql", command=self.generate_sql)
         self.filemenu.add_separator()
-        self.filemenu.add_command(label="Exit", command=self.quit)
+        self.filemenu.add_command(label="Exit", command=self.on_closing)
         self.menubar.add_cascade(label="File", menu=self.filemenu)
 
         self.editmenu = tk.Menu(self.menubar, tearoff=0)
@@ -75,6 +86,8 @@ class App(Tk):
         self.utilitiesmenu.add_command(label="Data visualization", command=self.open_dv_window)
         self.utilitiesmenu.add_separator()
         self.utilitiesmenu.add_command(label="Outlier detection (Ensemble model)", command=self.open_od_window)
+        self.utilitiesmenu.add_separator()
+        self.utilitiesmenu.add_command(label="Parallel processing workers", command=self.open_ppw_window)
         self.menubar.add_cascade(label="Utilities", menu=self.utilitiesmenu)
 
         self.helpmenu = tk.Menu(self.menubar, tearoff=0)
@@ -126,6 +139,8 @@ class App(Tk):
 
         #self.bind('<FocusIn>', self.focus_event_handler)
 
+        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+
         self.init_state()
         self.check_for_updates(infomsg=False)
 
@@ -150,6 +165,7 @@ class App(Tk):
                     self.show_rule_panel()
                     self.enable_export_menu()
                     self.enable_data_menu()
+                    self.filemenu.entryconfig("Enable server mode", state="disabled")
                 else:
                     mb.showwarning(title="Warning!", message="Something went wrong with file reading!", parent=self)
             else:
@@ -178,6 +194,9 @@ class App(Tk):
 
     def open_od_window(self):
         self.od_window = OutlierDetectionWindow(self, parent=self)
+
+    def open_ppw_window(self):
+        self.ppw_window = WorkersManagementWindow(self, parent=self)
 
     def open_rules_window(self, event):
         self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.df), parent=self)
@@ -266,11 +285,15 @@ class App(Tk):
     def init_state(self):
         self.df = None
         self.engine = None
+        self.server_thread = None
+
+        self.title(self.init_title)
         self.disable_export_menu()
         self.disable_data_menu()
         self.hide_rule_panel()
         self.hide_fire_panel()
         self.hide_exec_panel()
+        self.init_server_menu()
 
     def enable_export_menu(self):
         self.filemenu.entryconfig("Export to Excel", state="normal")
@@ -293,12 +316,18 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Data preview", state="normal")
         self.utilitiesmenu.entryconfig("Data visualization", state="normal")
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="normal")
+        self.utilitiesmenu.entryconfig("Parallel processing workers", state="normal")
 
     def disable_data_menu(self):
         self.utilitiesmenu.entryconfig("Data structure", state="disabled")
         self.utilitiesmenu.entryconfig("Data preview", state="disabled")
         self.utilitiesmenu.entryconfig("Data visualization", state="disabled")
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="disabled")
+        self.utilitiesmenu.entryconfig("Parallel processing workers", state="disabled")
+
+    def init_server_menu(self):
+        self.filemenu.entryconfig("Enable server mode", state="normal")
+        self.filemenu.entryconfig("Disable server mode", state="disabled")
 
     def disable_text_area(self):
         self.text_area.configure(state='disabled')
@@ -308,6 +337,10 @@ class App(Tk):
 
     def clear_text_area(self):
         self.text_area.delete(1.0, tk.END)
+
+    def hide_browse_panel(self):
+        self.browse_frame.forget()
+        self.holder_frame.forget()
 
     def hide_rule_panel(self):
         self.rule_frame.forget()
@@ -320,6 +353,10 @@ class App(Tk):
 
     def hide_exec_panel(self):
         self.exec_frame.forget()
+
+    def show_browse_panel(self):
+        self.browse_frame.pack(side=tk.TOP, fill=tk.X)
+        self.holder_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.TRUE)
 
     def show_rule_panel(self):
         self.rule_frame.pack(after=self.browse_frame, anchor=tk.W)
@@ -353,10 +390,13 @@ class App(Tk):
 
     def fire_all_rules(self, event):
         if self.engine and len(self.engine.rules) > 0:
-            start = time.time()
-            self.engine.fire_all_rules()
-            end = time.time()
-            self.result_display(end - start, self.show_exec_panel)
+            if len(self.server_list) > 0:
+                self.enable_client_mode()
+            else:
+                start = time.time()
+                self.engine.fire_all_rules()
+                end = time.time()
+                self.result_display(end - start, self.show_exec_panel)
 
     def copy_to_clipboard(self):
         content = self.text_area.get("1.0", tk.END)
@@ -365,6 +405,50 @@ class App(Tk):
     def text_area_style(self, bg_color, fg_color):
         self.text_area['bg'] = bg_color
         self.text_area['fg'] = fg_color
+
+    def enable_server_mode(self):
+        self.title(self.init_title + " [Server mode]")
+        if self.df is None and self.engine is None and self.server_thread is None:
+            self.filemenu.entryconfig("Enable server mode", state="disabled")
+            self.filemenu.entryconfig("Disable server mode", state="normal")
+            self.hide_browse_panel()
+            server.RUNFLAG = True
+            self.engine = RuleEngine(self.df)
+            self.server_thread = threading.Thread(target=server.main, args=(self.engine,))
+            self.server_thread.daemon = True
+            self.server_thread.start()
+
+    def disable_server_mode(self):
+        if self.server_thread:
+            self.show_browse_panel()
+            self.init_state()
+            server.RUNFLAG = False
+            self.enable_dummy_client_mode()
+            self.server_thread = None
+
+    def enable_client_mode(self):
+        if self.engine and len(self.engine.rules) > 0:
+            start = time.time()
+            self.engine.parallel_init()
+            rows = self.df.shape[0]
+            workers = len(self.server_list) + 1
+            chunk = int(rows / workers)
+            #remain = rows % workers
+            self_data_cursor = len(self.server_list) * chunk
+            client_thread = threading.Thread(target=client.main, args=(self.engine, self.server_list, chunk))
+            self_thread = threading.Thread(target=self.engine.fire_all_rules, args=(self_data_cursor,))
+            client_thread.start()
+            self_thread.start()
+            client_thread.join()
+            self_thread.join()
+            end = time.time()
+            self.result_display(end - start, self.show_exec_panel)
+    
+    def enable_dummy_client_mode(self):
+        client.main(engine=None, server_list=None, chunk=None, dummy=True)
+
+    def on_closing(self):
+        sys.exit()
 
 class RulesManagementWindow(tk.Toplevel):
     def __init__(self, *args, engine=None, columns=None, parent=None, **kwargs):
@@ -937,7 +1021,7 @@ class NewDBRuleWindow(tk.Toplevel):
                     mb.showerror(title="Fail", message="Something went wrong", parent=self)
 
     def init(self, rule):
-        if rule != None:
+        if rule:
             self.amendment = rule[0]
             self.rule_name.set(rule[1])
             self.rule_description.set(rule[2])
@@ -1050,6 +1134,106 @@ are expected to be isolated with fewer partitions (shorter paths in the trees).
         self.descr_label.pack(fill=tk.X)
 
         #self.focus()
+        self.grab_set()
+
+class WorkersManagementWindow(tk.Toplevel):
+    def __init__(self, *args, parent=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("560x280")
+        self.title("Workers panel")
+
+        def open_new_worker_window():
+            self.new_worker_window = NewWorkerWindow(self, parent=self, server_list=parent.server_list)
+
+        def _listbox_clear():
+            self.listbox_clear()
+
+        def _listbox_fill():
+            self.listbox_fill(parent.server_list)
+
+        def delete_selected_worker():
+            selectied_worker = self.listbox.curselection()
+            if selectied_worker:
+                del parent.server_list[selectied_worker[0]]
+                _listbox_clear()
+                _listbox_fill()
+
+        def clear_all():
+            parent.server_list.clear()
+            _listbox_clear()
+
+        def save():
+            pass
+    
+        #workers frame
+        self.workers_frame = tk.Frame(self)
+        self.workers_frame.pack(fill=tk.BOTH, side=tk.LEFT, expand=True)
+
+        #control_frame
+        self.control_frame = tk.Frame(self)
+        self.control_frame.pack(fill=tk.BOTH, side=tk.RIGHT)
+
+        self.scrollbar = tk.Scrollbar(self.workers_frame)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.BOTH)
+
+        self.listbox = tk.Listbox(self.workers_frame, activestyle=tk.NONE, selectmode=tk.SINGLE)
+        self.listbox.pack(fill=tk.BOTH, expand=True)
+
+        self.listbox.config(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.config(command=self.listbox.yview)
+
+        self.addbtn = tk.Button(self.control_frame, text="Add", width=10, command=open_new_worker_window)
+        self.addbtn.pack()
+        self.delbtn = tk.Button(self.control_frame, text="Delete", width=10, command=delete_selected_worker)
+        self.delbtn.pack()
+        self.delbtn = tk.Button(self.control_frame, text="Clear all", width=10, command=clear_all)
+        self.delbtn.pack()
+
+        _listbox_fill()
+
+        #self.focus()
+        self.wait_visibility()
+        self.grab_set()
+
+    def event_handler(self, server_list):
+        self.listbox_clear()
+        self.listbox_fill(server_list)
+
+    def listbox_clear(self):
+        self.listbox.delete(0, tk.END)
+
+    def listbox_fill(self, server_list):
+        for i, ip in enumerate(server_list):
+            self.listbox.insert(tk.END, str(i+1) + ') ' + ip)
+
+class NewWorkerWindow(tk.Toplevel):
+    def __init__(self, *args, parent=None, server_list=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("460x180")
+        self.title_text = "New Worker IP"
+
+        self.worker_ip = tk.StringVar()
+
+        def add_worker(event):
+            if parent and server_list is not None and util.server_status_check(self.worker_ip.get()):
+                server_list.append(self.worker_ip.get())
+                parent.event_handler(server_list)
+            else:
+                mb.showwarning(title="Warning!", message="The IP address is incorrect or the the server is not activated!", parent=self)
+                        
+        self.control_frame = tk.Frame(self, background='grey', relief=tk.GROOVE)
+        self.control_frame.pack(fill=tk.X, side=tk.TOP, pady=5)
+
+        self.ip_entry = tk.Entry(self.control_frame, textvariable=self.worker_ip, bd=3)
+        self.ip_entry.pack(fill=tk.X)
+
+        self.addbtn = ttk.Button(self, text='Add worker')
+        self.addbtn.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
+        self.addbtn.bind('<Button-1>', add_worker)
+
+        self.title(self.title_text)
+        #self.focus()
+        self.wait_visibility()
         self.grab_set()
 
 if __name__ == "__main__":

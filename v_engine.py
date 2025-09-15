@@ -7,7 +7,9 @@
 #
 
 import pandas as pd
+import threading
 import functools
+
 
 class RuleEngine():
     def __init__(self, df):
@@ -15,6 +17,10 @@ class RuleEngine():
         self.columns_to_check = []
         self.acceptable_values = []
         self.anomalies = {}
+        self.process_flag = False
+        self.result_cursor = 0
+        self.data_cursor = 0
+        self.cv = threading.Condition()
         self.logical_operator = None
         self.outlier_detection_time = 0.0
         self.df = df
@@ -39,13 +45,35 @@ class RuleEngine():
         self.columns_to_check[index] = column
         self.acceptable_values[index] = value_range
 
-    def anomaly_detection(self, column, result):
-        invalid_list = [(i+1, t[0]) for i, t in enumerate(result) if t[1] == False]
-        if invalid_list:
-            if not column in self.anomalies:
-                self.anomalies[column] = invalid_list
-            else:
-                self.anomalies[column] += invalid_list
+    def anomaly_detection(self, column, result, is_dictionary=False):
+        if is_dictionary:
+            self.cv.acquire()
+            while self.process_flag:
+                self.cv.wait()
+            self.process_flag = True
+            for k, v in result.items():
+                invalid_list = [tuple(val) for val in v]
+                if not k in self.anomalies:
+                    self.anomalies[k] = invalid_list
+                else:
+                    self.anomalies[k] += invalid_list
+            self.process_flag = False
+            self.cv.notify_all()
+            self.cv.release()
+        else:
+            invalid_list = [(i+1+self.result_cursor, t[0]) for i, t in enumerate(result) if t[1] == False]
+            if invalid_list:
+                self.cv.acquire()
+                while self.process_flag:
+                    self.cv.wait()
+                self.process_flag = True
+                if not column in self.anomalies:
+                    self.anomalies[column] = invalid_list
+                else:
+                    self.anomalies[column] += invalid_list
+                self.process_flag = False
+                self.cv.notify_all()
+                self.cv.release()
 
     def op_and(self, x, y):
         #res = [(lambda f, s: (f[0], f[1] and s[1]))(j, k) for j, k in zip(x, y)] #lambda function in list comprehension#
@@ -71,18 +99,26 @@ class RuleEngine():
         self.columns_to_check.clear()
         self.acceptable_values.clear()
         self.clear_outliers()
+        self.parallel_init()
         self.logical_operator = None
 
     def clear_outliers(self):
         self.anomalies.clear()
         self.outlier_detection_time = 0.0
 
-    def fire_all_rules(self):
+    def parallel_init(self):
+        self.clear_outliers()
+        self.process_flag = False
+        self.result_cursor = 0
+        self.data_cursor = 0
+
+    def fire_all_rules(self, cursor=0):
+        self.data_cursor = self.result_cursor = cursor
         self.clear_outliers()
         """ Iterate over columns_to_check and apply the corresponding rule function """
         if not self.logical_operator:
             for i, column in enumerate(self.columns_to_check):
-                column_values = self.df[column].tolist()
+                column_values = self.df[column][self.data_cursor:].tolist()
                 result = list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), column_values))
                 self.anomaly_detection(column, result)
         else:
@@ -91,7 +127,7 @@ class RuleEngine():
             # Get unique set of columns to check
             colset = set(self.columns_to_check)
             # Iterate over columns set and apply the corresponding rule function, group the result by column
-            results = [[list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), self.df[c].tolist())) for i, c in enumerate(self.columns_to_check) if c == x] for x in colset]
+            results = [[list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), self.df[c][self.data_cursor:].tolist())) for i, c in enumerate(self.columns_to_check) if c == x] for x in colset]
 
             if self.logical_operator == "AND":
                 op = self.op_and

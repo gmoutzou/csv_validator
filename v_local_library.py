@@ -14,6 +14,7 @@ from v_rule import Rule
 from datetime import datetime
 from string import whitespace
 
+
 rule_library = list()
 
 """ 3 Steps to import custom rules to library """

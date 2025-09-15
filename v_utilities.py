@@ -6,17 +6,20 @@
 # georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
-import io, os, sys
+import io, os, re, sys
 import csv
 import pandas as pd
 import numpy as np
 import requests
+import netifaces as ni
 import xml.etree.ElementTree as ET
 import v_common as common
+import v_client as client
 from v_pgdev import Pgdev
 from xlsxwriter.color import Color
 from dateutil.parser import parse
 from v_outlier_detector import OutlierDetector
+
 
 def print_msg_box(msg, indent=1, width=None, title=None):
     """Print message-box with optional title."""
@@ -279,7 +282,7 @@ def get_selected_rule_info(rule):
     else:
         return ()
 
-def export_to_xml_template(filename, engine):
+def export_to_xml_template(filename, engine, to_string=False):
     root = ET.Element("rules")
     root.set('logical_operator', str(engine.logical_operator))
     for i, r in enumerate(engine.rules):
@@ -289,16 +292,20 @@ def export_to_xml_template(filename, engine):
         vr = ET.SubElement(rule, "value_range")
         for v in engine.acceptable_values[i]:
             ET.SubElement(vr, "value").text = v
-
     tree = ET.ElementTree(root)
-    #xmlstr = ET.tostring(root, encoding='utf8')
-    #print(xmlstr)
-    ET.indent(tree, space="\t", level=0)
-    tree.write(filename, encoding='utf-8', xml_declaration=True)
+    if to_string:
+        xmlstr = ET.tostring(root, encoding='utf8')
+        return xmlstr.decode("utf-8")
+    else:
+        ET.indent(tree, space="\t", level=0)
+        tree.write(filename, encoding='utf-8', xml_declaration=True)
 
-def import_from_xml_template(filename):
+def import_from_xml_template(source_xml, from_string=False):
     xml_rules = []
-    tree = ET.parse(filename)
+    if from_string:
+        tree = ET.ElementTree(ET.fromstring(source_xml))
+    else:
+        tree = ET.parse(source_xml)
     root = tree.getroot()
     for rule in root.findall('rule'):
         column_to_check = rule.find('column_to_check').text
@@ -353,3 +360,28 @@ def jl10_to_dataframe(filename, jl10_spec):
     except:
         pass
     return df
+
+def ip4_addresses():
+    ip_list = []
+    """ Linux only version """
+    #for interface in ni.interfaces():
+    #    for link in ni.ifaddresses(interface)[ni.AF_INET]:
+    #        ip_list.append(link['addr'])
+    """ Linux & Windows version """
+    for interface in ni.interfaces():
+        if interface and ni.AF_INET in ni.ifaddresses(interface):
+            ip_list.append(ni.ifaddresses(interface)[ni.AF_INET][0]['addr'])
+    return ip_list
+
+def validate_ip_address(ip_address):
+    regex = "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
+    return (re.search(regex, ip_address))
+
+
+def server_status_check(server_ip):
+    if validate_ip_address(server_ip):
+        server_list = list()
+        server_list.append(server_ip)
+        return client.main(engine=None, server_list=server_list, chunk=None, dummy=False, status_check=True)
+    else:
+        return False

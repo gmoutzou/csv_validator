@@ -15,5 +15,6 @@ class Rule():
     def apply(self, value, value_range):
         try:
             return (value, self.func(value, value_range))
-        except ValueError:
+        except Exception as e:
+            print(f"Error when applying the rule {self.name}. {self.func}, value: {value}, value_range: {value_range}: {repr(e)}")
             return (value, False)
