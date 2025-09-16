@@ -7,6 +7,7 @@
 #
 
 import json
+import time
 import socket
 import pandas as pd
 import v_utilities as util
@@ -68,13 +69,17 @@ def handle_dataframe(client_socket, engine):
         engine.df = util.get_df_as_type_string(df)
     return success_flag
 
-def fire_all_client_rules(client_socket, engine):
+def fire_all_client_rules(client_socket, engine, callback):
     success_flag = True
     anomalies_json = "{}"
     try:
         if engine and len(engine.rules) > 0:
             try:
+                start = time.time()
                 engine.fire_all_rules()
+                end = time.time()
+                if callback:
+                    callback(end - start)
                 anomalies_json = json.dumps(engine.anomalies)
             except Exception as e:
                 print(f" -- Error while fire client rules and get the result in json: {repr(e)}")
@@ -91,7 +96,7 @@ def fire_all_client_rules(client_socket, engine):
         success_flag = False
     return success_flag
 
-def handle_client(client_socket, addr, engine):
+def handle_client(client_socket, addr, engine, callback):
     try:
         """ Receiving from client. """
         success_flag = True
@@ -104,22 +109,29 @@ def handle_client(client_socket, addr, engine):
             elif data == "@DATAFRAME-START@":
                 success_flag = handle_dataframe(client_socket, engine)
             elif data == "@FIRE@":
-                success_flag = fire_all_client_rules(client_socket, engine)
+                success_flag = fire_all_client_rules(client_socket, engine, callback)
             elif "@CURSOR#" in data:
                 items = data.split('#')
+                engine.clear()
+                engine.data_cursor = int(items[1].replace('@', ''))
                 engine.result_cursor = int(items[1].replace('@', ''))
                 client_socket.send("Cursor received.".encode(FORMAT))
+            elif "@CHUNK-SIZE#" in data:
+                items = data.split('#')
+                engine.rows = int(items[1].replace('@', ''))
+                client_socket.send("Chunk size received.".encode(FORMAT))
             elif data == "@CLOSE@":
                 break
     except Exception as e:
         print(f" -- Error while handling client connection: {repr(e)}")
     finally:
-        engine.df = None
-        engine.clear()
+        #engine.df = None
+        #engine.clear()
+        engine.parallel_init()
         client_socket.close()
         print(f" -- Connection to client ({addr[0]}:{addr[1]}) was closed")
 
-def main(engine):
+def main(engine, callback=None):
     try:
         """ Creating a TCP server socket """
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -132,12 +144,13 @@ def main(engine):
             """ Accepting the connection from the client. """
             print(f" -- Client connected from {addr[0]}:{addr[1]}")
             # handle the client
-            handle_client(client_socket, addr, engine)
+            handle_client(client_socket, addr, engine, callback)
     except Exception as e:
         print(f"An error has occured: {repr(e)}")
     finally:
         """ Server socket termination. """
-        engine.df = None
-        engine.clear()
+        #engine.df = None
+        #engine.clear()
+        engine.parallel_init()
         server.close()
         print(f"[+] Server terminated")

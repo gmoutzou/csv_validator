@@ -22,6 +22,7 @@ class RuleEngine():
         self.lock = threading.RLock()
         self.result_cursor = 0
         self.data_cursor = 0
+        self.rows = -1
         self.logical_operator = None
         self.outlier_detection_time = 0.0
         self.df = df
@@ -114,14 +115,16 @@ class RuleEngine():
         #self.process_flag = False
         self.result_cursor = 0
         self.data_cursor = 0
+        self.rows = -1
 
-    def fire_all_rules(self, cursor=0):
-        self.data_cursor = self.result_cursor = cursor
+    def fire_all_rules(self):
+        if self.rows == -1:
+            self.rows = self.df.shape[0]
         self.clear_outliers()
         """ Iterate over columns_to_check and apply the corresponding rule function """
         if not self.logical_operator:
             for i, column in enumerate(self.columns_to_check):
-                column_values = self.df[column][self.data_cursor:].tolist()
+                column_values = (self.df[column][self.data_cursor:self.rows]).tolist()
                 result = list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), column_values))
                 self.anomaly_detection(column, result)
         else:
@@ -130,7 +133,7 @@ class RuleEngine():
             # Get unique set of columns to check
             colset = set(self.columns_to_check)
             # Iterate over columns set and apply the corresponding rule function, group the result by column
-            results = [[list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), self.df[c][self.data_cursor:].tolist())) for i, c in enumerate(self.columns_to_check) if c == x] for x in colset]
+            results = [[list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), self.df[c][self.data_cursor:self.rows].tolist())) for i, c in enumerate(self.columns_to_check) if c == x] for x in colset]
 
             if self.logical_operator == "AND":
                 op = self.op_and

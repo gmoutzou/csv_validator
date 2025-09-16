@@ -4,7 +4,7 @@
 * Rule Engine - Rules are executed "on the fly"
 * Rule Library - Local (python script) & Remote (PostgreSQL DB) rule set that allows dynamic rule updates by the user without requiring code changes
 * Parallel processing capabillity
-* Version 4.0.1
+* Version 4.1.1
 
 ### Programming Languages & Frameworks
 - Python

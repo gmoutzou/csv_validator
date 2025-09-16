@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="4.0.1"
+        self.version="4.1.1"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -155,9 +155,9 @@ class App(Tk):
                 sep = config['delimiter']
                 hdr = 'infer' if config['header'] == 'True' else None
                 enc = config['encoding']
-                jl10_config = cfg.load_config(section='JL10')
-                jl10_spec = jl10_config['specification']
-                self.df = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jl10_spec=jl10_spec)
+                jlx_config = cfg.load_config(section='JL10')
+                jlx_spec = jlx_config['specification']
+                self.df = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec)
                 if self.df is not None:
                     self.df = util.get_df_as_type_string(self.df)
                     self.engine = RuleEngine(self.df)
@@ -165,7 +165,6 @@ class App(Tk):
                     self.show_rule_panel()
                     self.enable_export_menu()
                     self.enable_data_menu()
-                    self.filemenu.entryconfig("Enable server mode", state="disabled")
                 else:
                     mb.showwarning(title="Warning!", message="Something went wrong with file reading!", parent=self)
             else:
@@ -406,26 +405,34 @@ class App(Tk):
         self.text_area['bg'] = bg_color
         self.text_area['fg'] = fg_color
 
+    def gui_callback(self, exec_time):
+        self.result_display(exec_time, self.show_exec_panel_without_fire)
+
     def enable_server_mode(self):
-        if self.df is None and self.engine is None and self.server_thread is None:
+        if self.df is not None and self.engine is not None and self.server_thread is None:
             print(f"*** Server IP4 addresses: {util.ip4_addresses()} ***")
             self.title(self.init_title + " [Server mode]")
             self.filemenu.entryconfig("Enable server mode", state="disabled")
             self.filemenu.entryconfig("Disable server mode", state="normal")
-            self.hide_browse_panel()
+            #self.hide_browse_panel()
+            self.text_area_style('lightgrey', 'blue')
             server.RUNFLAG = True
-            self.engine = RuleEngine(self.df)
-            self.server_thread = threading.Thread(target=server.main, args=(self.engine,))
+            #self.engine = RuleEngine(self.df)
+            self.server_thread = threading.Thread(target=server.main, args=(self.engine, self.gui_callback))
             self.server_thread.daemon = True
             self.server_thread.start()
             
     def disable_server_mode(self):
         if self.server_thread:
-            self.show_browse_panel()
-            self.init_state()
             server.RUNFLAG = False
             self.enable_dummy_client_mode()
             self.server_thread = None
+            self.title(self.init_title)
+            self.text_area_style('white', 'blue')
+            self.data_structure()
+            #self.show_browse_panel()
+            #self.init_state()
+            self.init_server_menu()
 
     def enable_client_mode(self):
         if self.engine and len(self.engine.rules) > 0:
@@ -435,9 +442,10 @@ class App(Tk):
             workers = len(self.server_list) + 1
             chunk = int(rows / workers)
             #remain = rows % workers
-            self_data_cursor = len(self.server_list) * chunk
+            self_cursor = len(self.server_list) * chunk
+            self.engine.data_cursor = self.engine.result_cursor = self_cursor
             client_thread = threading.Thread(target=client.main, args=(self.engine, self.server_list, chunk))
-            self_thread = threading.Thread(target=self.engine.fire_all_rules, args=(self_data_cursor,))
+            self_thread = threading.Thread(target=self.engine.fire_all_rules, args=())
             client_thread.start()
             self_thread.start()
             client_thread.join()
@@ -1216,11 +1224,12 @@ class NewWorkerWindow(tk.Toplevel):
         self.worker_ip = tk.StringVar()
 
         def add_worker(event):
-            if parent and server_list is not None and util.server_status_check(self.worker_ip.get()):
-                server_list.append(self.worker_ip.get())
-                parent.event_handler(server_list)
-            else:
-                mb.showwarning(title="Warning!", message="The IP address is incorrect or the the server is not activated!", parent=self)
+            if self.worker_ip.get() not in server_list:
+                if parent and server_list is not None and util.server_status_check(self.worker_ip.get()):
+                    server_list.append(self.worker_ip.get())
+                    parent.event_handler(server_list)
+                else:
+                    mb.showwarning(title="Warning!", message="The IP address is incorrect or the the server is not activated!", parent=self)
                         
         self.control_frame = tk.Frame(self, background='grey', relief=tk.GROOVE)
         self.control_frame.pack(fill=tk.X, side=tk.TOP, pady=5)

@@ -82,7 +82,7 @@ def get_delimiter(filename):
         dialect = sniffer.sniff(f.readline())
         return dialect.delimiter
 
-def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None, jl10_spec=None):
+def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None, jlx_spec=None):
     df = None
     if filename.endswith('.csv'):
         df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type)
@@ -91,7 +91,7 @@ def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', typ
     elif filename.endswith('.json'):
         df = pd.read_json(filename, dtype=object)
     elif filename.endswith('.jlx'):
-        df = jl10_to_dataframe(filename, jl10_spec)
+        df = jlx2df(filename, jlx_spec)
     return df
 
 def is_digit(n):
@@ -331,7 +331,7 @@ def detect_outliers(df, column):
     result = list(zip(df[column].to_list(), outliers_and_anomalies))
     return result
 
-def jl10_to_dataframe(filename, jl10_spec):
+def jlx2df(filename, jl10_spec):
     df = None
     try:
         jl10_spec_dict = {}

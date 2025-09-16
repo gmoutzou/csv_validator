@@ -25,21 +25,29 @@ anomalies_dict = {}
 status_result = []
 c = threading.Condition()
 
-def handle_server(addr, engine, df_string, xml_rules, cursor):
+def handle_server(addr, engine, df_string, xml_rules, cursor, chunk_size):
     try:
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         #server_socket.settimeout(3)
         server_socket.connect(addr)
 
-        """ Step #0 """
+        """ Step #1 """
         # Sending the cursor to server. """
         try:
-            server_socket.send(("@CURSOR#"+str(cursor)+"@").encode(FORMAT))
+            server_socket.send(("@CURSOR#" + str(cursor) + "@").encode(FORMAT))
             msg = server_socket.recv(SIZE).decode(FORMAT)
         except Exception as e:
             print(f"Error while sending the cursor to server: {repr(e)}")
 
-        """ Step #1 """
+        """ Step #2 """
+        # Sending the chunk size to server. """
+        try:
+            server_socket.send(("@CHUNK-SIZE#" + str(chunk_size) + "@").encode(FORMAT))
+            msg = server_socket.recv(SIZE).decode(FORMAT)
+        except Exception as e:
+            print(f"Error while sending the chunk size to server: {repr(e)}")
+
+        """ Step #3 """
         # Sending ruleset to the server.
         try:
             server_socket.send("@RULES-START@".encode(FORMAT))
@@ -55,8 +63,8 @@ def handle_server(addr, engine, df_string, xml_rules, cursor):
         except Exception as e:
             print(f"Error while sending ruleset to the server: {repr(e)}")
 
-        """ Step #2 """
-        # Sending the dataframe to the server. """
+        """ Step #4 
+        # Sending the dataframe to the server.
         try:
             server_socket.send("@DATAFRAME-START@".encode(FORMAT))
             msg = server_socket.recv(SIZE).decode(FORMAT)
@@ -70,9 +78,10 @@ def handle_server(addr, engine, df_string, xml_rules, cursor):
             server_socket.send("@DATAFRAME-END@".encode(FORMAT))
         except Exception as e:
             print(f"Error while sending the dataframe to server: {repr(e)}")
+        """
 
-        """ Step #3 """
-        # Receive anomalies from server
+        """ Step #5 """
+        # Receive anomalies from server.
         try:
             anomalies_json = ""
             server_socket.send("@FIRE@".encode(FORMAT))
@@ -92,8 +101,8 @@ def handle_server(addr, engine, df_string, xml_rules, cursor):
         except Exception as e:
             print(f"Error while receiving anomalies from server: {repr(e)}")
 
-        """ Step #4 """
-        # Sending close message to the server and closing the connection. """
+        """ Step #6 """
+        # Sending close message to the server and closing the connection.
         server_socket.send("@CLOSE@".encode(FORMAT))
         server_socket.close()
     except Exception as e:
@@ -141,7 +150,7 @@ def main(engine, server_list, chunk, dummy=False, status_check=False):
             xml_rules = util.export_to_xml_template(filename=None, engine=engine, to_string=True)
             for i, server_ip in enumerate(server_list):
                 ADDR = (server_ip, PORT)
-                df_string = engine.df[i*chunk:(i*chunk)+chunk].to_csv(sep=';', encoding='utf-8', header=True, index=False)
-                thread = threading.Thread(target=handle_server, args=(ADDR, engine, df_string, xml_rules, i*chunk))
+                #df_string = engine.df[i*chunk:(i*chunk)+chunk].to_csv(sep=';', encoding='utf-8', header=True, index=False)
+                thread = threading.Thread(target=handle_server, args=(ADDR, engine, None, xml_rules, i*chunk, chunk))
                 thread.start()
                 thread.join()
