@@ -39,17 +39,17 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
             server_socket.send(("@DATAFRAME-HASH@").encode(FORMAT))
             server_df_hash = server_socket.recv(SIZE).decode(FORMAT)
         except Exception as e:
-            print(f"Error while sending the cursor to server: {repr(e)}")
+            print(f"Error while sending the dataframe hash to server: {repr(e)}")
 
         if server_df_hash == df_hash:
             """ Step #1 """
-            # Sending the cursor to server. """
+            # Sending the cursor & chunk size to server. """
             try:
                 data = f"CURSOR#{str(cursor)}@CHUNK#{str(chunk_size)}"
                 server_socket.send((data).encode(FORMAT))
                 msg = server_socket.recv(SIZE).decode(FORMAT)
             except Exception as e:
-                print(f"Error while sending the cursor to server: {repr(e)}")
+                print(f"Error while sending the cursor & chunk size to server: {repr(e)}")
 
             """ Step #2 """
             # Sending ruleset to the server.
