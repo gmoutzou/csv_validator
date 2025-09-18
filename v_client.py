@@ -45,20 +45,13 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
             """ Step #1 """
             # Sending the cursor to server. """
             try:
-                server_socket.send(("@CURSOR#" + str(cursor) + "@").encode(FORMAT))
+                data = f"CURSOR#{str(cursor)}@CHUNK#{str(chunk_size)}"
+                server_socket.send((data).encode(FORMAT))
                 msg = server_socket.recv(SIZE).decode(FORMAT)
             except Exception as e:
                 print(f"Error while sending the cursor to server: {repr(e)}")
 
             """ Step #2 """
-            # Sending the chunk size to server. """
-            try:
-                server_socket.send(("@CHUNK-SIZE#" + str(chunk_size) + "@").encode(FORMAT))
-                msg = server_socket.recv(SIZE).decode(FORMAT)
-            except Exception as e:
-                print(f"Error while sending the chunk size to server: {repr(e)}")
-
-            """ Step #3 """
             # Sending ruleset to the server.
             try:
                 server_socket.send("@RULES-START@".encode(FORMAT))
@@ -73,7 +66,7 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
             except Exception as e:
                 print(f"Error while sending ruleset to the server: {repr(e)}")
 
-            """ Step #4 
+            """
             # Sending the dataframe to the server.
             try:
                 server_socket.send("@DATAFRAME-START@".encode(FORMAT))
@@ -90,7 +83,7 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
                 print(f"Error while sending the dataframe to server: {repr(e)}")
             """
 
-            """ Step #5 """
+            """ Step #3 """
             # Receive anomalies from server.
             try:
                 anomalies_json = ""
@@ -111,7 +104,7 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
             except Exception as e:
                 print(f"Error while receiving anomalies from server: {repr(e)}")
 
-        """ Step #6 """
+        """ Last Step """
         # Sending close message to the server and closing the connection.
         server_socket.send("@CLOSE@".encode(FORMAT))
         server_socket.close()

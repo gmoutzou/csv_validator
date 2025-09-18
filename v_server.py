@@ -114,16 +114,12 @@ def handle_client(client_socket, addr, engine, callback):
                 success_flag = handle_dataframe(client_socket, engine)
             elif data == "@FIRE@":
                 success_flag = fire_all_client_rules(client_socket, engine, callback)
-            elif "@CURSOR#" in data:
-                items = data.split('#')
+            elif "CURSOR#" in data and "CHUNK#" in data:
+                items = data.split('@')
                 engine.clear()
-                engine.data_cursor = int(items[1].replace('@', ''))
-                engine.result_cursor = int(items[1].replace('@', ''))
-                client_socket.send("Cursor received.".encode(FORMAT))
-            elif "@CHUNK-SIZE#" in data:
-                items = data.split('#')
-                engine.rows = int(items[1].replace('@', ''))
-                client_socket.send("Chunk size received.".encode(FORMAT))
+                engine.data_cursor = engine.result_cursor = int(items[0].split('#')[1])
+                engine.rows = int(items[1].split('#')[1])
+                client_socket.send("Cursor & chunk size received.".encode(FORMAT))
             elif data == "@CLOSE@":
                 break
     except Exception as e:

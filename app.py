@@ -1119,7 +1119,7 @@ class OutlierDetectionWindow(tk.Toplevel):
             parent.engine.anomaly_detection(self.col.get(), result)
             end = time.time()
             parent.engine.outlier_detection_time = end - start
-            parent.result_display(parent.engine.outlier_detection_time, parent.show_exec_panel_without_fire)
+            parent.result_display(1, parent.df.shape[0], parent.engine.outlier_detection_time, parent.show_exec_panel_without_fire)
             #self.destroy()
 
         self.columns = util.get_df_columns(parent.df)
