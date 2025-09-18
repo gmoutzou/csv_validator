@@ -125,10 +125,12 @@ class App(Tk):
         #execution panel
         self.exec_frame = tk.Frame(self)
         self.exec_frame.pack(fill=tk.X)
+        self.proc_label = ttk.Label(self.exec_frame, text='')
+        self.proc_label.pack(anchor=tk.W, padx=5, pady=5)
         self.exec_label = ttk.Label(self.exec_frame, text='')
         self.exec_label.pack(anchor=tk.W, padx=5, pady=5)
         self.total_label = ttk.Label(self.exec_frame, text='')
-        self.total_label.pack(anchor=tk.W, padx=5)
+        self.total_label.pack(anchor=tk.W, padx=5, pady=5)
 
         self.holder_frame = tk.Frame(self)
         self.holder_frame.pack(side=tk.BOTTOM, fill=tk.BOTH, expand=tk.TRUE)
@@ -165,6 +167,7 @@ class App(Tk):
                     self.show_rule_panel()
                     self.enable_export_menu()
                     self.enable_data_menu()
+                    self.init_server_menu()
                 else:
                     mb.showwarning(title="Warning!", message="Something went wrong with file reading!", parent=self)
             else:
@@ -273,10 +276,15 @@ class App(Tk):
     def check_for_updates(self, infomsg=True):
         config = cfg.load_config(section="general")
         version_info = util.get_version_info(config['api_url'])
-        web_version = int(version_info['version'].replace('.', ''))
+        if version_info:
+            web_version = int(version_info['version'].replace('.', ''))
+            web_release = version_info['release']
+        else:
+            web_version = int(self.version.replace('.', ''))
+            web_release = self.release
         my_version = int(self.version.replace('.', ''))
-        if (web_version > my_version) or (web_version == my_version and version_info['release'] != self.release):
-            mb.showwarning(title="Warning!", message="A new version is available (" + version_info['version'] + " " + version_info['release'] + "), get it from " + config['download_url'], parent=self)
+        if (web_version > my_version) or (web_version == my_version and web_release != self.release):
+            mb.showwarning(title="Warning!", message="A new version is available (" + str(web_version) + " " + web_release + "), get it from " + config['download_url'], parent=self)
         else:
             if infomsg:
                 mb.showinfo(title="No newer version", message="You are running the latest vesion of Validator!", parent=self)
@@ -292,7 +300,7 @@ class App(Tk):
         self.hide_rule_panel()
         self.hide_fire_panel()
         self.hide_exec_panel()
-        self.init_server_menu()
+        self.disable_server_menu()
 
     def enable_export_menu(self):
         self.filemenu.entryconfig("Export to Excel", state="normal")
@@ -326,6 +334,10 @@ class App(Tk):
 
     def init_server_menu(self):
         self.filemenu.entryconfig("Enable server mode", state="normal")
+        self.filemenu.entryconfig("Disable server mode", state="disabled")
+
+    def disable_server_menu(self):
+        self.filemenu.entryconfig("Enable server mode", state="disabled")
         self.filemenu.entryconfig("Disable server mode", state="disabled")
 
     def disable_text_area(self):
@@ -369,12 +381,13 @@ class App(Tk):
     def show_exec_panel_without_fire(self):
         self.exec_frame.pack(after=self.rule_frame, anchor=tk.W)
 
-    def result_display(self, exec_time, exec_panel_func):
+    def result_display(self, start_row, end_row, exec_time, exec_panel_func):
         self.enable_text_area()
         self.clear_text_area()
         total, txt_content = util.get_result(self.engine.anomalies)
         self.text_area_style('black', 'white')
         exec_panel_func()
+        self.proc_label['text'] = "Processed rows: " +  str(start_row) + " - " + str(end_row)
         self.exec_label['text'] = "Execution time: " + str(exec_time) + " seconds"
         self.total_label['text'] = "Total invalid values: " + str(total)
         self.text_area.insert(tk.END, txt_content)
@@ -395,7 +408,7 @@ class App(Tk):
                 start = time.time()
                 self.engine.fire_all_rules()
                 end = time.time()
-                self.result_display(end - start, self.show_exec_panel)
+                self.result_display(1, self.df.shape[0], end - start, self.show_exec_panel)
 
     def copy_to_clipboard(self):
         content = self.text_area.get("1.0", tk.END)
@@ -405,8 +418,8 @@ class App(Tk):
         self.text_area['bg'] = bg_color
         self.text_area['fg'] = fg_color
 
-    def gui_callback(self, exec_time):
-        self.result_display(exec_time, self.show_exec_panel_without_fire)
+    def gui_callback(self, start_row, end_row, exec_time):
+        self.result_display(start_row, end_row, exec_time, self.show_exec_panel_without_fire)
 
     def enable_server_mode(self):
         if self.df is not None and self.engine is not None and self.server_thread is None:
@@ -438,9 +451,9 @@ class App(Tk):
         if self.engine and len(self.engine.rules) > 0:
             start = time.time()
             self.engine.parallel_init()
-            rows = self.df.shape[0]
+            total_rows = self.df.shape[0]
             workers = len(self.server_list) + 1
-            chunk = int(rows / workers)
+            chunk = int(total_rows / workers)
             #remain = rows % workers
             self_cursor = len(self.server_list) * chunk
             self.engine.data_cursor = self.engine.result_cursor = self_cursor
@@ -451,7 +464,7 @@ class App(Tk):
             client_thread.join()
             self_thread.join()
             end = time.time()
-            self.result_display(end - start, self.show_exec_panel)
+            self.result_display(self_cursor + 1, total_rows, end - start, self.show_exec_panel)
     
     def enable_dummy_client_mode(self):
         client.main(engine=None, server_list=None, chunk=None, dummy=True)

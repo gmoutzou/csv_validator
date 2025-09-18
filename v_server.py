@@ -9,6 +9,7 @@
 import json
 import time
 import socket
+import hashlib
 import pandas as pd
 import v_utilities as util
 import v_rule_library as vlib
@@ -30,7 +31,7 @@ def handle_rules(client_socket, engine):
     try:
         while True:
             client_socket.send("Waiting Rules.".encode(FORMAT))
-            data = client_socket.recv(SIZE).decode(FORMAT)
+            data = client_socket.recv(SIZE*4).decode(FORMAT)
             if not data or data == "@RULES-END@":
                 break
             xml_rules_string += data
@@ -79,13 +80,13 @@ def fire_all_client_rules(client_socket, engine, callback):
                 engine.fire_all_rules()
                 end = time.time()
                 if callback:
-                    callback(end - start)
+                    callback(engine.data_cursor + 1, engine.data_cursor + engine.rows, end - start)
                 anomalies_json = json.dumps(engine.anomalies)
             except Exception as e:
                 print(f" -- Error while fire client rules and get the result in json: {repr(e)}")
         client_socket.send("@ANOMALIES-START@".encode(FORMAT))
-        for i in range(0, len(anomalies_json), STRINGCHUNKSIZE):
-            data = anomalies_json[i:i+STRINGCHUNKSIZE]
+        for i in range(0, len(anomalies_json), STRINGCHUNKSIZE*4):
+            data = anomalies_json[i:i+STRINGCHUNKSIZE*4]
             if not data:
                 break
             client_socket.send(data.encode(FORMAT))
@@ -104,6 +105,9 @@ def handle_client(client_socket, addr, engine, callback):
             data = client_socket.recv(SIZE).decode(FORMAT)
             if data == "@STATUS@":
                 client_socket.send("200".encode(FORMAT))
+            elif data == "@DATAFRAME-HASH@":
+                df_hash = hashlib.sha256(engine.df.to_json().encode()).hexdigest()
+                client_socket.send(df_hash.encode(FORMAT))
             elif data == "@RULES-START@":
                 success_flag = handle_rules(client_socket, engine)
             elif data == "@DATAFRAME-START@":
