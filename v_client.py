@@ -86,7 +86,7 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
             """ Step #3 """
             # Receive anomalies from server.
             try:
-                anomalies_json = ""
+                anomalies_json = "{}"
                 server_socket.send("@FIRE@".encode(FORMAT))
                 msg = server_socket.recv(SIZE).decode(FORMAT)
                 if msg == "@ANOMALIES-START@":
