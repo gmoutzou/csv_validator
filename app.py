@@ -62,6 +62,7 @@ class App(Tk):
         self.filemenu.add_separator()
         self.filemenu.add_command(label="CSV Configuration", command=self.open_csv_config_window)
         self.filemenu.add_command(label="JL10 Configuration", command=self.open_jl10_config_window)
+        self.filemenu.add_command(label="Fixed Width Format File Configuration", command=self.open_fwf_config_window)
         self.filemenu.add_command(label="DB Configuration", command=self.open_db_config_window)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Export to Excel", command=self.export_to_excel)
@@ -102,7 +103,7 @@ class App(Tk):
         #csv file panel
         self.browse_frame = tk.Frame(self)
         self.browse_frame.pack(side=tk.TOP, fill=tk.X)
-        self.csv_label = ttk.Label(self.browse_frame, text='CSV / XLSX / JSON / JL10 file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
+        self.csv_label = ttk.Label(self.browse_frame, text='CSV / XLSX / JSON / JL10 / Fixed Width Format file:').pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
         self.csv_entry = tk.Entry(self.browse_frame, textvariable=self.csv_file, bd=3)
         self.csv_entry.pack(side='left', expand=True, fill=tk.X)
         self.csv_button = ttk.Button(self.browse_frame, text='Choose file...', command=self.open_csv_file)
@@ -150,7 +151,7 @@ class App(Tk):
         self.text_area['bg'] = 'white'
         self.text_area['fg'] = 'blue'
         if self.csv_file.get():
-            if os.path.exists(self.csv_file.get()) and (self.csv_file.get().endswith('.csv') or self.csv_file.get().endswith('.xlsx') or self.csv_file.get().endswith('.json') or self.csv_file.get().endswith('.jlx')):
+            if os.path.exists(self.csv_file.get()): #and (self.csv_file.get().endswith('.csv') or self.csv_file.get().endswith('.xlsx') or self.csv_file.get().endswith('.json') or self.csv_file.get().endswith('.jlx')):
                 #sep = util.get_delimiter(self.csv_file.get())
                 self.init_state()
                 config = cfg.load_config()
@@ -159,7 +160,8 @@ class App(Tk):
                 enc = config['encoding']
                 jlx_config = cfg.load_config(section='JL10')
                 jlx_spec = jlx_config['specification']
-                self.df = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec)
+                fwf_config = cfg.load_config(section='FWF')
+                self.df = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config)
                 if self.df is not None:
                     self.df = util.get_df_as_type_string(self.df)
                     self.engine = RuleEngine(self.df)
@@ -177,13 +179,16 @@ class App(Tk):
             self.init_state() 
 
     def open_csv_file(self):
-        self.csv_file.set(fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV Comma Separatad Values","*.csv"), ("XLSX Spreadsheets","*.xlsx"), ("JSON Files","*.json"), ("JL10 Files","*.jlx")]))
+        self.csv_file.set(fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV Comma Separatad Values","*.csv"), ("XLSX Spreadsheets","*.xlsx"), ("JSON Files","*.json"), ("JL10 Files","*.jlx"), ("All Files","*.*")]))
 
     def open_csv_config_window(self):
         self.config_window = ConfigWindow(self)
 
     def open_jl10_config_window(self):
         self.jl10_config_window = JL10ConfigWindow(self)
+
+    def open_fwf_config_window(self):
+        self.fwf_config_window = FixedWidthConfigWindow(self)
 
     def open_db_config_window(self):
         self.dbconfig_window = DBConfigWindow(self)
@@ -783,6 +788,44 @@ class JL10ConfigWindow(tk.Toplevel):
         new_spec = '|'.join(clean_spec_list)
         config['specification'] = new_spec
         cfg.write_config(filename='config.ini', section='JL10', config=config)
+        self.destroy()
+
+
+class FixedWidthConfigWindow(tk.Toplevel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("480x340")
+        self.title("Fixed Width File Format Configuration")
+
+        self.spec_panel = tk.Frame(self)
+        self.spec_panel.pack(fill=tk.X, pady=5)
+        self.specification_label = ttk.Label(self.spec_panel, text='Specification:')
+        self.specification_label.pack(anchor=tk.W, padx=5, fill=tk.X)
+        self.text_widget = tk.Text(self.spec_panel, height=9)
+        self.text_widget.insert(tk.END, (cfg.load_config(filename='config.ini', section='FWF')['specification']))
+        self.text_widget.pack(anchor=tk.W, fill=tk.X, padx=5)
+
+        self.ignored_panel = tk.Frame(self)
+        self.ignored_panel.pack(fill=tk.X, pady=5)
+        self.ignored_label = ttk.Label(self.ignored_panel, text='Ignore lines which start with:')
+        self.ignored_label.pack(anchor=tk.W, padx=5, fill=tk.X)
+        self.ignored_input = tk.Text(self.ignored_panel, height=9)
+        self.ignored_input.insert(tk.END, (cfg.load_config(filename='config.ini', section='FWF')['ignored']))
+        self.ignored_input.pack(anchor=tk.W, fill=tk.X, padx=5)
+
+        self.save_panel = tk.Frame(self)
+        self.save_panel.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
+        self.savebtn = ttk.Button(self.save_panel, text='Save')
+        self.savebtn.pack(fill=tk.X)
+        self.savebtn.bind('<Button-1>', self.save_and_exit)
+
+    def save_and_exit(self, event):
+        config = {}
+        new_spec = (self.text_widget.get(1.0, "end-1c")).replace('\n', ',')
+        new_ignored = (self.ignored_input.get(1.0, "end-1c")).replace('\n', ',')
+        config['specification'] = new_spec
+        config['ignored'] = new_ignored
+        cfg.write_config(filename='config.ini', section='FWF', config=config)
         self.destroy()
 
 class DBConfigWindow(tk.Toplevel):

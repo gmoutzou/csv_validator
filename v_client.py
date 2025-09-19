@@ -96,6 +96,7 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
                             break
                         anomalies_json += data
                         server_socket.send("Anomalies chunk received.".encode(FORMAT))
+                #print(anomalies_json)
                 anomalies_dict = json.loads(anomalies_json)
                 try:
                     engine.anomaly_detection(column=None, result=anomalies_dict, is_dictionary=True)

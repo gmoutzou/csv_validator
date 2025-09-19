@@ -148,7 +148,10 @@ rule_library.append(rule)
 # equal [8]
 def equal_to(value, value_range):
     if value_range:
-         return (float(value.replace(",", ".")) == float(value_range[0].replace(",", ".")))
+         if common.is_digit(value_range[0]):
+            return (float(value.replace(",", ".")) == float(value_range[0].replace(",", ".")))
+         else:
+            return (value == value_range[0])
     else:
         return True
 
@@ -159,7 +162,10 @@ rule_library.append(rule)
 # Not equal [9]
 def not_equal_to(value, value_range):
     if value_range:
-        return (float(value.replace(",", ".")) != float(value_range[0].replace(",", ".")))
+        if common.is_digit(value_range[0]):
+            return (float(value.replace(",", ".")) != float(value_range[0].replace(",", ".")))
+        else:
+            return (value != value_range[0])
     else:
         return True
 

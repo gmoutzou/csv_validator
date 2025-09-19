@@ -82,7 +82,7 @@ def get_delimiter(filename):
         dialect = sniffer.sniff(f.readline())
         return dialect.delimiter
 
-def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None, jlx_spec=None):
+def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None, jlx_spec=None, fwf_spec=None):
     df = None
     if filename.endswith('.csv'):
         df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type)
@@ -92,6 +92,8 @@ def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', typ
         df = pd.read_json(filename, dtype=object)
     elif filename.endswith('.jlx'):
         df = jlx2df(filename, jlx_spec)
+    else:
+        df = fwf2df(filename, fwf_spec)
     return df
 
 def is_digit(n):
@@ -342,7 +344,7 @@ def jlx2df(filename, jl10_spec):
                 rid = r_spec_list[0]
                 rdata = r_spec_list[1]
                 jl10_spec_dict[rid] = rdata
-        with open(filename, 'r') as file:
+        with open(filename, 'r', encoding='utf-8') as file:
             data = []
             for record in file:
                 if record[0] in jl10_spec_dict and '-' not in jl10_spec_dict[record[0]]:
@@ -357,8 +359,36 @@ def jlx2df(filename, jl10_spec):
                         start = end
                     data.append(rdict)
             df = pd.DataFrame(data)
-    except:
-        pass
+    except Exception as e:
+        print(repr(e))
+    return df
+
+def fwf2df(filename, fwf_spec):
+    df = None
+    col_spec_list = fwf_spec['specification'].split(',')
+    ignored_list = fwf_spec['ignored'].split(',')
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            data = []
+            for record in file:
+                ignored_record = False
+                for x in ignored_list:
+                    if record.startswith(x):
+                        ignored_record = True
+                        break
+                if not ignored_record:
+                    start = 0
+                    rdict = {}
+                    for i, c in enumerate(col_spec_list):
+                        colname = 'Column-' + str(i)
+                        end = start + int(c)
+                        coldata = record[start:end]
+                        rdict[colname] = coldata
+                        start = end
+                    data.append(rdict)
+            df = pd.DataFrame(data)
+    except Exception as e:
+        print(repr(e))
     return df
 
 def ip4_addresses():

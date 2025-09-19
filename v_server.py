@@ -86,7 +86,7 @@ def fire_all_client_rules(client_socket, engine, callback):
                 print(f" -- Error while fire client rules and get the result in json: {repr(e)}")
         client_socket.send("@ANOMALIES-START@".encode(FORMAT))
         for i in range(0, len(anomalies_json), STRINGCHUNKSIZE*4):
-            data = anomalies_json[i:i+STRINGCHUNKSIZE*4]
+            data = anomalies_json[i:i+(STRINGCHUNKSIZE*4)]
             if not data:
                 break
             client_socket.send(data.encode(FORMAT))

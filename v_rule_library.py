@@ -47,8 +47,8 @@ def get_rule_library():
                 exec_str = row[4] + "\n" + f"rule=Rule(name='{row[1]}', descr='{row[2]}', func={row[3]})" + "\n" + "rule_library.append(rule)"      
                 try:
                     exec(exec_str)
-                except:
-                     pass
+                except Exception as e:
+                    print(repr(e))
     return rule_library    
 
 #################################################################
