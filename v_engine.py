@@ -17,6 +17,7 @@ class RuleEngine():
         self.columns_to_check = []
         self.acceptable_values = []
         self.anomalies = {}
+        self.cross_validation = []
         #self.process_flag = False
         #self.cv = threading.Condition()
         self.lock = threading.RLock()
@@ -36,6 +37,9 @@ class RuleEngine():
             self.rules.append(rule)
             self.columns_to_check.append(column)
             self.acceptable_values.append(value_range)
+
+    def add_cross_validation(self, i_when, i_then):
+        self.cross_validation.append((i_when, i_then))
 
     def delete_rule(self, index):
         del self.rules[index]
@@ -102,6 +106,7 @@ class RuleEngine():
         self.rules.clear()
         self.columns_to_check.clear()
         self.acceptable_values.clear()
+        self.cross_validation.clear()
         self.clear_outliers()
         self.parallel_init()
         self.logical_operator = None
@@ -118,34 +123,53 @@ class RuleEngine():
         self.rows = -1
 
     def fire_all_rules(self):
+        with self.lock:
+            self.clear_outliers()
         if self.rows == -1:
             self.rows = self.df.shape[0]
-        self.clear_outliers()
-        """ Iterate over columns_to_check and apply the corresponding rule function """
-        if not self.logical_operator:
-            for i, column in enumerate(self.columns_to_check):
-                column_values = (self.df[column][self.data_cursor:self.rows]).tolist()
-                result = list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), column_values))
-                self.anomaly_detection(column, result)
+        if self.cross_validation and len(self.rules) >= 2:
+            shift = 1
+            for row in self.df[self.data_cursor:self.rows].itertuples():
+                for i_when, i_then in self.cross_validation:
+                    when_col_idx = self.df.columns.get_loc(self.columns_to_check[i_when]) + shift
+                    then_col_idx = self.df.columns.get_loc(self.columns_to_check[i_then]) + shift
+                    if self.rules[i_when].apply(row[when_col_idx], self.acceptable_values[i_when])[1] == True and self.rules[i_then].apply(row[then_col_idx], self.acceptable_values[i_then])[1] == False:
+                        invalid_list = [(row.Index + shift, row[then_col_idx])]
+                        with self.lock:
+                            if not self.columns_to_check[i_then] in self.anomalies:
+                                self.anomalies[self.columns_to_check[i_then]] = invalid_list
+                            else:
+                                self.anomalies[self.columns_to_check[i_then]] += invalid_list
         else:
-            op = None
-            aggregation_result = None
-            # Get unique set of columns to check
-            colset = set(self.columns_to_check)
-            # Iterate over columns set and apply the corresponding rule function, group the result by column
-            results = [[list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), self.df[c][self.data_cursor:self.rows].tolist())) for i, c in enumerate(self.columns_to_check) if c == x] for x in colset]
+            if not self.logical_operator:
+                # Iterate over columns_to_check and apply the corresponding rule function
+                for i, column in enumerate(self.columns_to_check):
+                    column_values = (self.df[column][self.data_cursor:self.rows]).tolist()
+                    #result = list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), column_values))
+                    result = []
+                    for v in column_values:
+                        result.append(self.rules[i].apply(value=v, value_range=self.acceptable_values[i]))
+                    self.anomaly_detection(column, result)
 
-            if self.logical_operator == "AND":
-                op = self.op_and
-            elif self.logical_operator =="OR":
-                op = self.op_or
-            elif self.logical_operator =="XOR":
-                op = self.op_xor
+            else:
+                op = None
+                aggregation_result = None
+                # Get unique set of columns to check
+                colset = set(self.columns_to_check)
+                # Iterate over columns set and apply the corresponding rule function, group the result by column
+                results = [[list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), self.df[c][self.data_cursor:self.rows].tolist())) for i, c in enumerate(self.columns_to_check) if c == x] for x in colset]
 
-            if op:
-                # Apply logical operator and reduce the results
-                aggregation_result = list(map(lambda x: self.logical_operator_apply(op, *x), results)) #unpack the function arguments using the asterisk
-            if aggregation_result:
-                # Get the invalid values
-                for col, res in zip(colset, aggregation_result):
-                    self.anomaly_detection(col, res)
+                if self.logical_operator == "AND":
+                    op = self.op_and
+                elif self.logical_operator =="OR":
+                    op = self.op_or
+                elif self.logical_operator =="XOR":
+                    op = self.op_xor
+
+                if op:
+                    # Apply logical operator and reduce the results
+                    aggregation_result = list(map(lambda x: self.logical_operator_apply(op, *x), results)) #unpack the function arguments using the asterisk
+                if aggregation_result:
+                    # Get the invalid values
+                    for col, res in zip(colset, aggregation_result):
+                        self.anomaly_detection(col, res)

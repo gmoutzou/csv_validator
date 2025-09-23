@@ -12,7 +12,7 @@ import socket
 import hashlib
 import pandas as pd
 import v_utilities as util
-import v_rule_library as vlib
+import v_local_library as local
 #from tqdm import tqdm
 from io import StringIO
 
@@ -36,16 +36,18 @@ def handle_rules(client_socket, engine):
                 break
             xml_rules_string += data
         if xml_rules_string:
-            root_attrib, xml_rules_list = util.import_from_xml_template(xml_rules_string, from_string=True)
+            rules_attrib, xml_rules_list, cross_validation = util.import_from_xml_template(xml_rules_string, from_string=True)
             op = str(None)
-            if "logical_operator" in root_attrib:
-                op = root_attrib['logical_operator']
+            if "logical_operator" in rules_attrib:
+                op = rules_attrib['logical_operator']
             if op == "AND" or op == "OR" or op == "XOR":
                 engine.logical_operator = op
-            for r in vlib.get_rule_library():
-                for x in xml_rules_list:
-                    if r.name == x[1]:
-                        engine.add_rule(rule=r, column=x[0], value_range=x[2])    
+            for x in xml_rules_list:
+                for r in local.rule_library:
+                    if x[1] == r.name:
+                        engine.add_rule(rule=r, column=x[0], value_range=x[2])
+            for i_when, i_then in cross_validation:
+                engine.add_cross_validation(i_when, i_then)
     except Exception as e:
         print(f" --  Error while handling rules from client: {repr(e)}")
         success_flag = False
@@ -82,6 +84,7 @@ def fire_all_client_rules(client_socket, engine, callback):
                 if callback:
                     callback(engine.data_cursor + 1, engine.data_cursor + engine.rows, end - start)
                 anomalies_json = json.dumps(engine.anomalies)
+                #print(anomalies_json)
             except Exception as e:
                 print(f" -- Error while fire client rules and get the result in json: {repr(e)}")
         client_socket.send("@ANOMALIES-START@".encode(FORMAT))
@@ -91,10 +94,14 @@ def fire_all_client_rules(client_socket, engine, callback):
                 break
             client_socket.send(data.encode(FORMAT))
             msg = client_socket.recv(SIZE).decode(FORMAT)
-        client_socket.send("@ANOMALIES-END@".encode(FORMAT))
     except Exception as e:
         print(f" -- Error while handle anomalies: {repr(e)}")
         success_flag = False
+    finally:
+        try:
+            client_socket.send("@ANOMALIES-END@".encode(FORMAT))
+        except:
+            pass
     return success_flag
 
 def handle_client(client_socket, addr, engine, callback):

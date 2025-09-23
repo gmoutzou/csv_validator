@@ -285,15 +285,23 @@ def get_selected_rule_info(rule):
         return ()
 
 def export_to_xml_template(filename, engine, to_string=False):
-    root = ET.Element("rules")
-    root.set('logical_operator', str(engine.logical_operator))
+    root = ET.Element("template")
+    rules = ET.SubElement(root, "rules")
+    rules.set('logical_operator', str(engine.logical_operator))
     for i, r in enumerate(engine.rules):
-        rule = ET.SubElement(root, "rule")
+        rule = ET.SubElement(rules, "rule")
+        rule.set('id', str(i))
         ET.SubElement(rule, "column_to_check").text = engine.columns_to_check[i]
         ET.SubElement(rule, "rule_name").text = r.name
         vr = ET.SubElement(rule, "value_range")
         for v in engine.acceptable_values[i]:
             ET.SubElement(vr, "value").text = v
+    cv = ET.SubElement(root, "cross_validation")
+    for i, (j, k) in enumerate(engine.cross_validation):
+        cvi = ET.SubElement(cv, "check")
+        cvi.set('id', str(i))
+        ET.SubElement(cvi, "when").text = str(j)
+        ET.SubElement(cvi, "then").text = str(k)
     tree = ET.ElementTree(root)
     if to_string:
         xmlstr = ET.tostring(root, encoding='utf8')
@@ -303,21 +311,33 @@ def export_to_xml_template(filename, engine, to_string=False):
         tree.write(filename, encoding='utf-8', xml_declaration=True)
 
 def import_from_xml_template(source_xml, from_string=False):
+    logical_operator = None
     xml_rules = []
+    cross_validation = []
     if from_string:
         tree = ET.ElementTree(ET.fromstring(source_xml))
     else:
         tree = ET.parse(source_xml)
     root = tree.getroot()
-    for rule in root.findall('rule'):
-        column_to_check = rule.find('column_to_check').text
-        rule_name = rule.find('rule_name').text
-        vr = rule.find('value_range')
-        values = []
-        for v in vr:
-            values.append(v.text)
-        xml_rules.append((column_to_check, rule_name, values))
-    return root.attrib, xml_rules
+    for rules in root.findall('rules'):
+        logical_operator = rules.attrib
+        for rule in rules.findall('rule'):
+            rule_id = int(rule.attrib['id'])
+            column_to_check = rule.find('column_to_check').text
+            rule_name = rule.find('rule_name').text
+            vr = rule.find('value_range')
+            values = []
+            for v in vr:
+                values.append(v.text)
+            xml_rules.append((column_to_check, rule_name, values))
+            if xml_rules[rule_id] != (column_to_check, rule_name, values):
+                xml_rules[rule_id] = (column_to_check, rule_name, values)
+    for cv in root.findall('cross_validation'):
+        for check in cv.findall('check'):
+            when = check.find('when').text
+            then = check.find('then').text
+            cross_validation.append((int(when), int(then)))
+    return logical_operator, xml_rules, cross_validation
 
 def most_frequent_item(List):
     return max(set(List), key=List.count)
@@ -415,3 +435,19 @@ def server_status_check(server_ip):
         return client.main(engine=None, server_list=server_list, chunk=None, dummy=False, status_check=True)
     else:
         return False
+    
+def rule_in_cv(rule_index, cross_validation):
+  flag = False
+  for j, k in cross_validation:
+    if rule_index == j or rule_index == k:
+      flag = True
+      break
+  return flag
+
+def change_rule_index_in_cv(i, cv):
+    for c, (j, k) in enumerate(cv):
+        if i < j:
+            j -= 1
+        if i < k:
+            k -= 1
+        cv[c] = (j, k)

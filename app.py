@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="4.1.1"
+        self.version="4.2.2"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -297,7 +297,10 @@ class App(Tk):
     def init_state(self):
         self.df = None
         self.engine = None
-        self.server_thread = None
+        if self.server_thread:
+            server.RUNFLAG = False
+            self.enable_dummy_client_mode()
+            self.server_thread = None
 
         self.title(self.init_title)
         self.disable_export_menu()
@@ -480,7 +483,7 @@ class App(Tk):
 class RulesManagementWindow(tk.Toplevel):
     def __init__(self, *args, engine=None, columns=None, parent=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.geometry("560x280")
+        self.geometry("560x330")
         self.title("Rules panel")
 
         def destroy_event_handler(event):
@@ -498,9 +501,10 @@ class RulesManagementWindow(tk.Toplevel):
             self.listbox_fill(engine)
 
         def delete_selected_rule():
-            selectied_rule = self.listbox.curselection()
-            if selectied_rule:
-                engine.delete_rule(selectied_rule[0])
+            selected_rule = self.listbox.curselection()
+            if selected_rule and selected_rule[0] < len(engine.rules) and not util.rule_in_cv(selected_rule[0], engine.cross_validation):
+                util.change_rule_index_in_cv(selected_rule[0], engine.cross_validation)
+                engine.delete_rule(selected_rule[0])
                 _listbox_clear()
                 _listbox_fill()
 
@@ -508,20 +512,27 @@ class RulesManagementWindow(tk.Toplevel):
             engine.clear()
             _listbox_clear()
 
+        def cross_validation_clear():
+            engine.cross_validation.clear()
+            _listbox_clear()
+            _listbox_fill()
+
         def _import():
             filename = fd.askopenfilename(defaultextension=".xml", filetypes=[("XML Documents","*.xml")])
             if filename:
                 clear_all()
-                root_attrib, xml_rules = util.import_from_xml_template(filename)
+                rules_attrib, xml_rules, cross_validation = util.import_from_xml_template(filename)
                 op = str(None)
-                if "logical_operator" in root_attrib:
-                    op = root_attrib['logical_operator']
+                if "logical_operator" in rules_attrib:
+                    op = rules_attrib['logical_operator']
                 if op == "AND" or op == "OR" or op == "XOR":
                     engine.logical_operator = op
-                for r in vlib.get_rule_library():
-                    for x in xml_rules:
-                        if r.name == x[1]:
+                for x in xml_rules:
+                    for r in vlib.get_rule_library():
+                        if x[1] == r.name:
                             engine.add_rule(rule=r, column=x[0], value_range=x[2])
+                for i_when, i_then in cross_validation:
+                    engine.add_cross_validation(i_when, i_then)
                 _listbox_fill()
 
         def _export():
@@ -535,8 +546,12 @@ class RulesManagementWindow(tk.Toplevel):
 
         def open_rule_amendment_window():
             selected_rule = self.listbox.curselection()
-            if selected_rule:
+            if selected_rule and selected_rule[0] < len(engine.rules):
                 self.new_rule_window = NewRuleWindow(self, parent=self, engine=engine, columns=columns, amendment=(selected_rule[0], self.listbox.get(selected_rule)))
+
+        def open_cross_validation_window():
+            if engine and len(engine.rules) >=2:
+                self.cross_validation_window = CrossValidationWindow(self, parent=self, engine=engine)
 
         def operator_and_state(var, index, mode):
             if self.operator_and.get() == True:
@@ -591,6 +606,10 @@ class RulesManagementWindow(tk.Toplevel):
         self.impbtn.pack()
         self.expbtn = tk.Button(self.control_frame, text="Export", width=10, command=_export)
         self.expbtn.pack()
+        self.crvbtn = tk.Button(self.control_frame, text="Cross validation", width=10, command=open_cross_validation_window)
+        self.crvbtn.pack()
+        self.cvcbtn = tk.Button(self.control_frame, text="Clear CV", width=10, command=cross_validation_clear)
+        self.cvcbtn.pack()
 
         self.operator_and = tk.BooleanVar()
         self.operator_or = tk.BooleanVar()
@@ -627,16 +646,21 @@ class RulesManagementWindow(tk.Toplevel):
         self.operator_xor.set(False)
 
     def listbox_fill(self, engine):
+        shift = 1
         for i, r in enumerate(engine.rules):
             vr = ','.join(engine.acceptable_values[i])
             vr = ': ' + vr if vr else ''
-            self.listbox.insert(tk.END, str(i+1) + ') ' + engine.columns_to_check[i] + ' -> ' + r.name + vr)
+            self.listbox.insert(tk.END, str(i+shift) + ') ' + engine.columns_to_check[i] + ' -> ' + r.name + vr)
         if engine.logical_operator == "AND":
             self.operator_and.set(True)
         elif engine.logical_operator == "OR":
             self.operator_or.set(True)
         elif engine.logical_operator == "XOR":
             self.operator_xor.set(True)
+        if engine.cross_validation:
+            self.listbox.insert(tk.END, "*** Cross validation checks ***")
+            for j, k in engine.cross_validation:
+                self.listbox.insert(tk.END, "When Rule #" + str(j+shift) + " Then Rule #" + str(k+shift))
 
 class NewRuleWindow(tk.Toplevel):
     def __init__(self, *args, parent=None, engine=None, columns=None, amendment=None, **kwargs):
@@ -1226,9 +1250,6 @@ class WorkersManagementWindow(tk.Toplevel):
         def clear_all():
             parent.server_list.clear()
             _listbox_clear()
-
-        def save():
-            pass
     
         #workers frame
         self.workers_frame = tk.Frame(self)
@@ -1300,6 +1321,45 @@ class NewWorkerWindow(tk.Toplevel):
         self.title(self.title_text)
         #self.focus()
         self.wait_visibility()
+        self.grab_set()
+
+class CrossValidationWindow(tk.Toplevel):
+    def __init__(self, *args, parent=None, engine=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("460x180")
+        self.title("Cross Validation")
+
+        def fill_then_list(var, index, mode):
+            self.then_rule['values'] = [str(i+1) + ') ' + engine.columns_to_check[i] + ' -> ' + r.name + (': ' + ','.join(engine.acceptable_values[i]) if engine.acceptable_values[i] else '') for i, r in enumerate(engine.rules)]
+
+        def run_process(var, index, mode):
+            if self.when.get() and self.then.get():
+                shift = 1
+                i_when = int(self.when.get().split(')')[0]) - shift
+                i_then = int(self.then.get().split(')')[0]) - shift
+                engine.add_cross_validation(i_when, i_then)
+                parent.event_handler(engine)
+                self.destroy()
+        
+        self.when = tk.StringVar()
+        self.when.trace_add("write", callback=fill_then_list)
+        self.then = tk.StringVar()
+        self.then.trace_add("write", callback=run_process)
+
+        self.control_frame = tk.Frame(self, borderwidth=2, relief="groove")
+        self.control_frame.pack(fill=tk.X)
+        self.when_label = ttk.Label(self.control_frame, text='When:')
+        self.when_label.pack(anchor=tk.W, padx=5, pady=5)
+        self.when_rule = ttk.Combobox(self.control_frame, textvariable=self.when, state="readonly")
+        self.when_rule.pack(fill=tk.X)
+        self.when_rule['values'] = [str(i+1) + ') ' + engine.columns_to_check[i] + ' -> ' + r.name + (': ' + ','.join(engine.acceptable_values[i]) if engine.acceptable_values[i] else '') for i, r in enumerate(engine.rules)]
+        self.then_label = ttk.Label(self.control_frame, text='Then:')
+        self.then_label.pack(anchor=tk.W, padx=5, pady=5)
+        self.then_rule = ttk.Combobox(self.control_frame, textvariable=self.then, state="readonly")
+        self.then_rule.pack(fill=tk.X)
+        self.then_rule['values'] = []
+
+        #self.focus()
         self.grab_set()
 
 if __name__ == "__main__":
