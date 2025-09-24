@@ -112,7 +112,8 @@ class RuleEngine():
         self.logical_operator = None
 
     def clear_outliers(self):
-        self.anomalies.clear()
+        with self.lock:
+            self.anomalies.clear()
         self.outlier_detection_time = 0.0
 
     def parallel_init(self):
@@ -123,8 +124,7 @@ class RuleEngine():
         self.rows = -1
 
     def fire_all_rules(self):
-        with self.lock:
-            self.clear_outliers()
+        self.clear_outliers()
         if self.rows == -1:
             self.rows = self.df.shape[0]
         if self.cross_validation and len(self.rules) >= 2:
@@ -173,3 +173,4 @@ class RuleEngine():
                     # Get the invalid values
                     for col, res in zip(colset, aggregation_result):
                         self.anomaly_detection(col, res)
+                        

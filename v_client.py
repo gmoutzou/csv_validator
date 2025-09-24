@@ -30,7 +30,7 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
     server_df_hash = ""
     try:
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #server_socket.settimeout(3)
+        server_socket.settimeout(3)
         server_socket.connect(addr)
         """ Step #0 """
         # Sending the dataframe hash to server. """
@@ -71,8 +71,8 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
                 server_socket.send("@DATAFRAME-START@".encode(FORMAT))
                 msg = server_socket.recv(SIZE).decode(FORMAT)
                 #print(f"SERVER: {msg}")
-                for i in range(0, len(df_string), STRINGCHUNKSIZE):
-                    data = df_string[i:i+STRINGCHUNKSIZE]
+                for i in range(0, len(df_string), STRINGCHUNKSIZE*4):
+                    data = df_string[i:i+(STRINGCHUNKSIZE*4)]
                     if not data:
                         break
                     server_socket.send(data.encode(FORMAT))
@@ -103,20 +103,22 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
                     print(f"Error while running anomaly detection: {repr(e)}")
             except Exception as e:
                 print(f"Error while receiving anomalies from server: {repr(e)}")
-
-        """ Last Step """
-        # Sending close message to the server and closing the connection.
-        server_socket.send("@CLOSE@".encode(FORMAT))
-        server_socket.close()
     except Exception as e:
         print(f"Error while handling server connection: {repr(e)}")
+    finally:
+        try:
+            """ Last Step """
+            # Sending close message to the server and closing the connection.
+            server_socket.send("@CLOSE@".encode(FORMAT))
+            server_socket.close()
+        except:
+            pass
 
 def handle_self_server():
     try:
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server_socket.connect(ADDR)
         server_socket.send("@CLOSE@".encode(FORMAT))
-        # Closing the connection
         server_socket.close()
     except Exception as e:
         print(f"Error while handling self server connection: {repr(e)}")
