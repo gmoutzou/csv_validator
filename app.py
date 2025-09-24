@@ -409,6 +409,7 @@ class App(Tk):
             self.hide_exec_panel()
 
     def fire_all_rules(self, event):
+        self.engine.parallel_init()
         if self.engine and len(self.engine.rules) > 0:
             if len(self.server_list) > 0:
                 self.enable_client_mode()
@@ -542,6 +543,7 @@ class RulesManagementWindow(tk.Toplevel):
                 if success_flag:
                     _listbox_fill()
                 else:
+                    clear_all()
                     mb.showwarning(title="Warning!", message="Invalid rules template.", parent=self)
 
         def _export():
