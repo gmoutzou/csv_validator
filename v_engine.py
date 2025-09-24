@@ -12,7 +12,7 @@ import functools
 
 
 class RuleEngine():
-    def __init__(self, df):
+    def __init__(self):
         self.rules = []
         self.columns_to_check = []
         self.acceptable_values = []
@@ -26,7 +26,7 @@ class RuleEngine():
         self.rows = -1
         self.logical_operator = None
         self.outlier_detection_time = 0.0
-        self.df = df
+        self.df = None
     
     def add_rule(self, rule, column, value_range):
         if column == "<<ALL>>":

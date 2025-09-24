@@ -1,4 +1,4 @@
-RuleEngine#!/home/dev/anaconda3/envs/tensorflow/bin/python3
+#!/home/dev/anaconda3/envs/tensorflow/bin/python3
 """#!/bin/python3"""
 #
 # project: CSV Validator
@@ -16,6 +16,7 @@ import v_utilities as util
 import v_config as cfg
 import v_pgdev as pgdev
 import v_rule_library as vlib
+import v_local_library as local
 import v_server as server
 import v_client as client
 import pyperclip
@@ -43,7 +44,6 @@ class App(Tk):
         self.geometry("1024x640")
         self.resizable(False, False)
 
-        self.df = None
         self.engine = None
         self.server_thread = None
         self.server_list = []
@@ -161,16 +161,17 @@ class App(Tk):
                 jlx_config = cfg.load_config(section='JL10')
                 jlx_spec = jlx_config['specification']
                 fwf_config = cfg.load_config(section='FWF')
-                self.df = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config)
-                if self.df is not None:
-                    self.df = util.get_df_as_type_string(self.df)
-                    self.engine = RuleEngine(self.df)
+                self.engine = RuleEngine()
+                self.engine.df = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config)
+                if self.engine is not None and self.engine.df is not None:
+                    self.engine.df = util.get_df_as_type_string(self.engine.df)
                     self.data_structure()
                     self.show_rule_panel()
                     self.enable_export_menu()
                     self.enable_data_menu()
                     self.init_server_menu()
                 else:
+                    self.engine = None
                     mb.showwarning(title="Warning!", message="Something went wrong with file reading!", parent=self)
             else:
                 self.init_state()
@@ -197,7 +198,7 @@ class App(Tk):
         self.ruledb_window = RuleDBWindow(self)
 
     def open_dv_window(self):
-        self.dv_window = DataVisualizationWindow(self, df=self.df)
+        self.dv_window = DataVisualizationWindow(self, df=self.engine.df)
 
     def open_od_window(self):
         self.od_window = OutlierDetectionWindow(self, parent=self)
@@ -206,44 +207,44 @@ class App(Tk):
         self.ppw_window = WorkersManagementWindow(self, parent=self)
 
     def open_rules_window(self, event):
-        self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.df), parent=self)
+        self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.engine.df), parent=self)
 
     def export_to_excel(self):
         filename = fd.SaveAs(initialfile='output.xlsx', defaultextension=".xlsx", filetypes=[("XLSX Spreadsheets","*.xlsx")])
         if filename:
-            util.df2xlsx(filename.show(), self.df, self.engine.anomalies)
+            util.df2xlsx(filename.show(), self.engine.df, self.engine.anomalies)
 
     def export_to_csv(self):
         filename = fd.SaveAs(initialfile='output.csv', defaultextension=".csv", filetypes=[("CSV Files","*.csv")])
         if filename:
-            util.df2csv(filename.show(), self.df)
+            util.df2csv(filename.show(), self.engine.df)
 
     def export_to_json(self):
         filename = fd.SaveAs(initialfile='output.json', defaultextension=".json", filetypes=[("JSON Files","*.json")])
         if filename:
-            util.df2json(filename.show(), self.df)
+            util.df2json(filename.show(), self.engine.df)
 
     def export_to_xml(self):
         filename = fd.SaveAs(initialfile='output.xml', defaultextension=".xml", filetypes=[("XML Files","*.xml")])
         if filename:
-            util.df2xml(filename.show(), self.df)
+            util.df2xml(filename.show(), self.engine.df)
 
     def export_to_html(self):
         filename = fd.SaveAs(initialfile='output.html', defaultextension=".html", filetypes=[("HTML Files","*.html")])
         if filename:
-            util.df2html(filename.show(), self.df)
+            util.df2html(filename.show(), self.engine.df)
 
     def generate_sql(self):
         filename = fd.SaveAs(initialfile='output.sql', defaultextension=".sql", filetypes=[("SQL Files","*.sql")])
         if filename:
-            util.df2sql(filename.show(), self.df)
+            util.df2sql(filename.show(), self.engine.df)
 
     def data_structure(self):
         txt_content = ''
         bar = '========================================\n'
-        info = util.csv_data_structure(df=self.df, method='info')
+        info = util.csv_data_structure(df=self.engine.df, method='info')
         info = info[info.index('>')+2:]
-        #info += util.csv_data_structure(df=self.df, method='describe')
+        #info += util.csv_data_structure(df=self.engine.df, method='describe')
         txt_content += bar 
         txt_content += '=            Data structure            =\n'
         txt_content += bar
@@ -256,7 +257,7 @@ class App(Tk):
         self.disable_text_area()
 
     def data_preview(self):
-        txt_content = util.df_preview(self.df, 10)
+        txt_content = util.df_preview(self.engine.df, 10)
         self.text_area_style('white', 'blue')
         self.enable_text_area()
         self.clear_text_area()
@@ -295,7 +296,6 @@ class App(Tk):
                 mb.showinfo(title="No newer version", message="You are running the latest vesion of Validator!", parent=self)
 
     def init_state(self):
-        self.df = None
         self.engine = None
         if self.server_thread:
             server.RUNFLAG = False
@@ -416,7 +416,7 @@ class App(Tk):
                 start = time.time()
                 self.engine.fire_all_rules()
                 end = time.time()
-                self.result_display(1, self.df.shape[0], end - start, self.show_exec_panel)
+                self.result_display(1, self.engine.df.shape[0], end - start, self.show_exec_panel)
 
     def copy_to_clipboard(self):
         content = self.text_area.get("1.0", tk.END)
@@ -430,7 +430,7 @@ class App(Tk):
         self.result_display(start_row, end_row, exec_time, self.show_exec_panel_without_fire)
 
     def enable_server_mode(self):
-        if self.df is not None and self.engine is not None and self.server_thread is None:
+        if self.engine is not None and self.engine.df is not None and self.server_thread is None:
             print(f"*** Server IP4 addresses: {util.ip4_addresses()} ***")
             self.title(self.init_title + " [Server mode]")
             self.filemenu.entryconfig("Enable server mode", state="disabled")
@@ -438,7 +438,7 @@ class App(Tk):
             #self.hide_browse_panel()
             self.text_area_style('lightgrey', 'blue')
             server.RUNFLAG = True
-            #self.engine = RuleEngine(self.df)
+            #self.engine = RuleEngine()
             self.server_thread = threading.Thread(target=server.main, args=(self.engine, self.gui_callback))
             self.server_thread.daemon = True
             self.server_thread.start()
@@ -459,7 +459,7 @@ class App(Tk):
         if self.engine and len(self.engine.rules) > 0:
             start = time.time()
             self.engine.parallel_init()
-            total_rows = self.df.shape[0]
+            total_rows = self.engine.df.shape[0]
             workers = len(self.server_list) + 1
             chunk = int(total_rows / workers)
             #remain = rows % workers
@@ -523,17 +523,26 @@ class RulesManagementWindow(tk.Toplevel):
                 clear_all()
                 rules_attrib, xml_rules, cross_validation = util.import_from_xml_template(filename)
                 op = str(None)
+                df_colums = util.get_df_columns(engine.df)
+                success_flag = True
                 if "logical_operator" in rules_attrib:
                     op = rules_attrib['logical_operator']
                 if op == "AND" or op == "OR" or op == "XOR":
                     engine.logical_operator = op
                 for x in xml_rules:
-                    for r in vlib.get_rule_library():
+                    if x[0] not in df_colums:
+                        success_flag = False
+                        break
+                    #for r in vlib.get_rule_library():
+                    for r in local.rule_library:
                         if x[1] == r.name:
                             engine.add_rule(rule=r, column=x[0], value_range=x[2])
                 for i_when, i_then in cross_validation:
                     engine.add_cross_validation(i_when, i_then)
-                _listbox_fill()
+                if success_flag:
+                    _listbox_fill()
+                else:
+                    mb.showwarning(title="Warning!", message="Invalid rules template.", parent=self)
 
         def _export():
             if self.listbox.index("end") > 0:
@@ -675,7 +684,8 @@ class NewRuleWindow(tk.Toplevel):
         self.rule_name.trace_add("write", callback=self.display_description)
 
         def add_rule_to_engine(event):
-            for r in vlib.get_rule_library():
+            #for r in vlib.get_rule_library():
+            for r in local.rule_library:
                 if r.name == self.rule_name.get():
                     if amendment:
                         engine.modify_rule(index=amendment[0], rule=r, column=self.col.get(), value_range=util.get_value_range(self.vr.get()))
@@ -704,7 +714,8 @@ class NewRuleWindow(tk.Toplevel):
         col = ["<<ALL>>"] + columns
         self.column_chooser['values'] = col
         self.rule_chooser = ttk.Combobox(self.control_frame, textvariable=self.rule_name, state="readonly", width=25)
-        self.rule_chooser['values'] = [r.name for r in vlib.get_rule_library()]
+        #self.rule_chooser['values'] = [r.name for r in vlib.get_rule_library()]
+        self.rule_chooser['values'] = sorted([r.name for r in local.rule_library])
         self.vr_entry = tk.Entry(self.control_frame, textvariable=self.vr, bd=3)
 
         self.column_chooser.grid(row=1, column=0)
@@ -736,7 +747,8 @@ class NewRuleWindow(tk.Toplevel):
         self.grab_set()
 
     def display_description(self, var, index, mode):
-        for r in vlib.get_rule_library():
+        #for r in vlib.get_rule_library():
+        for r in local.rule_library:
             if r.name == self.rule_name.get():
                 self.descr_label['text'] = r.descr
 
@@ -1182,14 +1194,14 @@ class OutlierDetectionWindow(tk.Toplevel):
         def run_process(var, index, mode):
             parent.engine.clear_outliers()
             start = time.time()
-            result = util.detect_outliers(parent.df, self.col.get())
+            result = util.detect_outliers(parent.engine.df, self.col.get())
             parent.engine.anomaly_detection(self.col.get(), result)
             end = time.time()
             parent.engine.outlier_detection_time = end - start
-            parent.result_display(1, parent.df.shape[0], parent.engine.outlier_detection_time, parent.show_exec_panel_without_fire)
+            parent.result_display(1, parent.engine.df.shape[0], parent.engine.outlier_detection_time, parent.show_exec_panel_without_fire)
             #self.destroy()
 
-        self.columns = util.get_df_columns(parent.df)
+        self.columns = util.get_df_columns(parent.engine.df)
 
         self.col = tk.StringVar()
         self.col.trace_add("write", callback=run_process)
@@ -1306,7 +1318,7 @@ class NewWorkerWindow(tk.Toplevel):
                     server_list.append(self.worker_ip.get())
                     parent.event_handler(server_list)
                 else:
-                    mb.showwarning(title="Warning!", message="The IP address is incorrect or the the server is not activated!", parent=self)
+                    mb.showwarning(title="Warning!", message="The IP address is incorrect or the server is not activated!", parent=self)
                         
         self.control_frame = tk.Frame(self, background='grey', relief=tk.GROOVE)
         self.control_frame.pack(fill=tk.X, side=tk.TOP, pady=5)
