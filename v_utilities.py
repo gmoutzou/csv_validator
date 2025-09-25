@@ -427,7 +427,6 @@ def validate_ip_address(ip_address):
     regex = "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$"
     return (re.search(regex, ip_address))
 
-
 def server_status_check(server_ip):
     if validate_ip_address(server_ip):
         server_list = list()

@@ -13,6 +13,7 @@ from sklearn.ensemble import IsolationForest
 class OutlierDetector():
     def __init__(self, data):
         self.data = data
+        self.n_samples = len(data)
 
     def detect_outliers_iqr(self, k=1.5, return_thresholds=False):
         q25, q75 = np.percentile(self.data, [25, 75])
@@ -26,8 +27,9 @@ class OutlierDetector():
             return result
     
     def detect_outliers_iso_forest(self, n_estimators=100, contamination=0.01, sample_size=256):
+        if sample_size > self.n_samples:
+            sample_size = self.n_samples
         dataset = self.data.to_numpy(dtype=np.float32).reshape(-1, 1)
-        
         iso_forest = IsolationForest(n_estimators=n_estimators,
                                 contamination=contamination,
                                 max_samples=sample_size,

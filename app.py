@@ -37,7 +37,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="4.2.2"
+        self.version="4.2.3"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -544,7 +544,7 @@ class RulesManagementWindow(tk.Toplevel):
                     _listbox_fill()
                 else:
                     clear_all()
-                    mb.showwarning(title="Warning!", message="Invalid rules template.", parent=self)
+                    mb.showwarning(title="Warning!", message="Invalid rules template!", parent=self)
 
         def _export():
             if self.listbox.index("end") > 0:
