@@ -12,7 +12,7 @@ import socket
 import hashlib
 import pandas as pd
 import v_utilities as util
-import v_local_library as local
+#import v_local_library as local
 #from tqdm import tqdm
 from io import StringIO
 
@@ -25,7 +25,7 @@ STRINGCHUNKSIZE = 512
 FORMAT = "utf-8"
 RUNFLAG = True
 
-def handle_rules(client_socket, engine):
+def handle_rules(client_socket, engine, vlib):
     success_flag = True
     xml_rules_string = ""
     try:
@@ -43,7 +43,7 @@ def handle_rules(client_socket, engine):
             if op == "AND" or op == "OR" or op == "XOR":
                 engine.logical_operator = op
             for x in xml_rules_list:
-                for r in local.rule_library:
+                for r in vlib.rule_library:
                     if x[1] == r.name:
                         engine.add_rule(rule=r, column=x[0], value_range=x[2])
             for i_when, i_then in cross_validation:
@@ -104,7 +104,7 @@ def fire_all_client_rules(client_socket, engine, callback):
             pass
     return success_flag
 
-def handle_client(client_socket, addr, engine, callback):
+def handle_client(client_socket, addr, engine, vlib, callback):
     try:
         """ Receiving from client. """
         success_flag = True
@@ -116,7 +116,7 @@ def handle_client(client_socket, addr, engine, callback):
                 df_hash = hashlib.sha256(engine.df.to_json().encode()).hexdigest()
                 client_socket.send(df_hash.encode(FORMAT))
             elif data == "@RULES-START@":
-                success_flag = handle_rules(client_socket, engine)
+                success_flag = handle_rules(client_socket, engine, vlib)
             elif data == "@DATAFRAME-START@":
                 success_flag = handle_dataframe(client_socket, engine)
             elif data == "@FIRE@":
@@ -138,7 +138,7 @@ def handle_client(client_socket, addr, engine, callback):
         client_socket.close()
         print(f" -- Connection to client ({addr[0]}:{addr[1]}) was closed")
 
-def main(engine, callback=None):
+def main(engine, vlib, callback=None):
     try:
         """ Creating a TCP server socket """
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -151,7 +151,7 @@ def main(engine, callback=None):
             """ Accepting the connection from the client. """
             print(f" -- Client connected from {addr[0]}:{addr[1]}")
             # handle the client
-            handle_client(client_socket, addr, engine, callback)
+            handle_client(client_socket, addr, engine, vlib, callback)
     except Exception as e:
         print(f"An error has occured: {repr(e)}")
     finally:

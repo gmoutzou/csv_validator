@@ -15,8 +15,6 @@ import tkinter.font
 import v_utilities as util
 import v_config as cfg
 import v_pgdev as pgdev
-import v_rule_library as vlib
-import v_local_library as local
 import v_server as server
 import v_client as client
 import pyperclip
@@ -28,6 +26,7 @@ from tkinter import ttk
 from tkinter import filedialog as fd
 from tkinter import messagebox as mb
 from tkinter import scrolledtext
+from v_rule_library import RuleLibrary
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 import functools
@@ -37,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="4.2.3"
+        self.version="4.4.1"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -47,6 +46,7 @@ class App(Tk):
         self.engine = None
         self.server_thread = None
         self.server_list = []
+        self.vlib = RuleLibrary()
 
         # Create the application variables
         self.csv_file = tk.StringVar()
@@ -87,6 +87,7 @@ class App(Tk):
         self.utilitiesmenu.add_command(label="Data visualization", command=self.open_dv_window)
         self.utilitiesmenu.add_separator()
         self.utilitiesmenu.add_command(label="Outlier detection (Ensemble model)", command=self.open_od_window)
+        self.utilitiesmenu.add_command(label="Value frequency display", command=self.open_vfd_window)
         self.utilitiesmenu.add_separator()
         self.utilitiesmenu.add_command(label="Parallel processing workers", command=self.open_ppw_window)
         self.menubar.add_cascade(label="Utilities", menu=self.utilitiesmenu)
@@ -202,6 +203,9 @@ class App(Tk):
 
     def open_od_window(self):
         self.od_window = OutlierDetectionWindow(self, parent=self)
+
+    def open_vfd_window(self):
+        self.vfd_window = ValueFrequencyDisplayWindow(self, parent=self)
 
     def open_ppw_window(self):
         self.ppw_window = WorkersManagementWindow(self, parent=self)
@@ -331,6 +335,7 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Data preview", state="normal")
         self.utilitiesmenu.entryconfig("Data visualization", state="normal")
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="normal")
+        self.utilitiesmenu.entryconfig("Value frequency display", state="normal")
         self.utilitiesmenu.entryconfig("Parallel processing workers", state="normal")
 
     def disable_data_menu(self):
@@ -338,6 +343,7 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Data preview", state="disabled")
         self.utilitiesmenu.entryconfig("Data visualization", state="disabled")
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="disabled")
+        self.utilitiesmenu.entryconfig("Value frequency display", state="disabled")
         self.utilitiesmenu.entryconfig("Parallel processing workers", state="disabled")
 
     def init_server_menu(self):
@@ -440,7 +446,7 @@ class App(Tk):
             self.text_area_style('lightgrey', 'blue')
             server.RUNFLAG = True
             #self.engine = RuleEngine()
-            self.server_thread = threading.Thread(target=server.main, args=(self.engine, self.gui_callback))
+            self.server_thread = threading.Thread(target=server.main, args=(self.engine, self.vlib, self.gui_callback))
             self.server_thread.daemon = True
             self.server_thread.start()
             
@@ -486,6 +492,8 @@ class RulesManagementWindow(tk.Toplevel):
         super().__init__(*args, **kwargs)
         self.geometry("560x330")
         self.title("Rules panel")
+
+        self.vlib = parent.vlib
 
         def destroy_event_handler(event):
             if parent and isinstance(event.widget, RulesManagementWindow):
@@ -535,7 +543,7 @@ class RulesManagementWindow(tk.Toplevel):
                         success_flag = False
                         break
                     #for r in vlib.get_rule_library():
-                    for r in local.rule_library:
+                    for r in self.vlib.rule_library:
                         if x[1] == r.name:
                             engine.add_rule(rule=r, column=x[0], value_range=x[2])
                 for i_when, i_then in cross_validation:
@@ -679,6 +687,8 @@ class NewRuleWindow(tk.Toplevel):
         self.geometry("460x180")
         self.title_text = "New Rule"
 
+        self.vlib = parent.vlib
+
         self.rule_name = tk.StringVar()
         self.col = tk.StringVar()
         self.vr = tk.StringVar()
@@ -687,7 +697,7 @@ class NewRuleWindow(tk.Toplevel):
 
         def add_rule_to_engine(event):
             #for r in vlib.get_rule_library():
-            for r in local.rule_library:
+            for r in self.vlib.rule_library:
                 if r.name == self.rule_name.get():
                     if amendment:
                         engine.modify_rule(index=amendment[0], rule=r, column=self.col.get(), value_range=util.get_value_range(self.vr.get()))
@@ -717,7 +727,7 @@ class NewRuleWindow(tk.Toplevel):
         self.column_chooser['values'] = col
         self.rule_chooser = ttk.Combobox(self.control_frame, textvariable=self.rule_name, state="readonly", width=25)
         #self.rule_chooser['values'] = [r.name for r in vlib.get_rule_library()]
-        self.rule_chooser['values'] = sorted([r.name for r in local.rule_library])
+        self.rule_chooser['values'] = sorted([r.name for r in self.vlib.rule_library])
         self.vr_entry = tk.Entry(self.control_frame, textvariable=self.vr, bd=3)
 
         self.column_chooser.grid(row=1, column=0)
@@ -750,7 +760,7 @@ class NewRuleWindow(tk.Toplevel):
 
     def display_description(self, var, index, mode):
         #for r in vlib.get_rule_library():
-        for r in local.rule_library:
+        for r in self.vlib.rule_library:
             if r.name == self.rule_name.get():
                 self.descr_label['text'] = r.descr
 
@@ -1334,7 +1344,7 @@ class NewWorkerWindow(tk.Toplevel):
 
         self.title(self.title_text)
         #self.focus()
-        self.wait_visibility()
+        #self.wait_visibility()
         self.grab_set()
 
 class CrossValidationWindow(tk.Toplevel):
@@ -1374,6 +1384,57 @@ class CrossValidationWindow(tk.Toplevel):
         self.then_rule['values'] = []
 
         #self.focus()
+        self.grab_set()
+
+class ValueFrequencyDisplayWindow(tk.Toplevel):
+    def __init__(self, *args, parent=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("560x280")
+        self.title("Value Frequency Display")
+
+        self.columns = util.get_df_columns(parent.engine.df)
+
+        def listbox_clear():
+            self.listbox.delete(0, tk.END)
+
+        def listbox_fill():
+            val_freq = parent.engine.df[self.col.get()].value_counts(normalize=True) * 100
+            for i, v in val_freq.items():
+                if i == '':
+                    i = 'NULL'
+                self.listbox.insert(tk.END, str(i) + ' --> ' + str(round(v, 2)) + '%')
+
+        def run_process(var, index, mode):
+            listbox_clear()
+            listbox_fill()
+            
+
+        self.col = tk.StringVar()
+        self.col.trace_add("write", callback=run_process)
+
+        self.control_frame = tk.Frame(self, borderwidth=2, relief="groove")
+        self.control_frame.pack(fill=tk.X, side=tk.TOP)
+        self.col_label = ttk.Label(self.control_frame, text='Select column:')
+        self.col_label.pack(anchor=tk.W, padx=5, pady=5)
+        self.col_chooser = ttk.Combobox(self.control_frame, textvariable=self.col, state="readonly")
+        self.col_chooser.pack(fill=tk.X)
+        self.col_chooser['values'] = self.columns
+
+        #display_frame
+        self.display_frame = tk.Frame(self)
+        self.display_frame.pack(fill=tk.X, side=tk.BOTTOM, expand=True)
+
+        self.scrollbar = tk.Scrollbar(self.display_frame)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.BOTH)
+
+        self.listbox = tk.Listbox(self.display_frame, activestyle=tk.NONE, selectmode=tk.SINGLE)
+        self.listbox.pack(fill=tk.BOTH, expand=True)
+
+        self.listbox.config(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.config(command=self.listbox.yview)
+
+        #self.focus()
+        #self.wait_visibility()
         self.grab_set()
 
 if __name__ == "__main__":

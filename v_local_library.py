@@ -925,3 +925,36 @@ def valid_date_digits_only_format(value, value_range):
 rule = Rule(name='valid_date_digits_only_format', descr='Check if the column values match with date format YYYYMMDD', func=valid_date_digits_only_format)
 rule_library.append(rule)
 ##################################################################
+
+# IBAN check [42]
+def iban_check_generic(value, value_range):
+    if not value:
+        return False
+        
+    key = 55
+    divisor = 97
+    
+    value = value.strip().upper()
+    
+    country_code = value[:2]
+    check_digit = value[2:4]
+    fcc = str(ord(country_code[:1]) - key)
+    scc = str(ord(country_code[1:2]) - key)
+
+    remain_value = ""
+    for char in value[4:]:
+        if char.isalpha():
+            char = str(ord(char) - key)
+        remain_value += char
+        
+    first4chars = fcc + scc + check_digit
+    number_value = int(remain_value + first4chars)
+    
+    if number_value % divisor == 1:
+        return True
+      
+    return False
+
+rule = Rule(name='is_valid_iban', descr='Check if the column contains valid IBAN numbers', func=iban_check_generic)
+rule_library.append(rule)
+##################################################################
