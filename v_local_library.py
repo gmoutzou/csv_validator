@@ -103,10 +103,10 @@ rule_library.append(rule)
 
 # Grater than [4]
 def greater_than(value, value_range):
-    if value_range:
+    if common.is_digit(value) and common.is_digit(value_range[0]):
         return (float(value.replace(",", ".")) > float(value_range[0].replace(",", ".")))
     else:
-        return True
+        return (value > value_range[0])
 
 rule = Rule(name='greater_than', descr='Check if the column values \nare greater than the given value', func=greater_than)
 rule_library.append(rule)
@@ -114,10 +114,10 @@ rule_library.append(rule)
 
 # Grater or equal [5]
 def greater_or_equal(value, value_range):
-    if value_range:
+    if common.is_digit(value) and common.is_digit(value_range[0]):
         return (float(value.replace(",", ".")) >= float(value_range[0].replace(",", ".")))
     else:
-        return True
+        return (value >= value_range[0])
 
 rule = Rule(name='greater_or_equal', descr='Check if the column values \nare greater than or equal to the given value', func=greater_or_equal)
 rule_library.append(rule)
@@ -125,10 +125,10 @@ rule_library.append(rule)
 
 # Less than [6]
 def less_than(value, value_range):
-    if value_range:
+    if common.is_digit(value) and common.is_digit(value_range[0]):
         return (float(value.replace(",", ".")) < float(value_range[0].replace(",", ".")))
     else:
-        return True
+        return (value < value_range[0])
 
 rule = Rule(name='less_than', descr='Check if the column values \nare less than the given value', func=less_than)
 rule_library.append(rule)
@@ -136,10 +136,10 @@ rule_library.append(rule)
 
 # Less or equal [7]
 def less_or_equal(value, value_range):
-    if value_range:
+    if common.is_digit(value) and common.is_digit(value_range[0]):
         return (float(value.replace(",", ".")) <= float(value_range[0].replace(",", ".")))
     else:
-        return True
+        return (value <= value_range[0])
 
 rule = Rule(name='less_or_equal', descr='Check if the column values \nare less than or equal to the given value', func=less_or_equal)
 rule_library.append(rule)
@@ -148,7 +148,7 @@ rule_library.append(rule)
 # equal [8]
 def equal_to(value, value_range):
     if value_range:
-         if common.is_digit(value_range[0]):
+         if common.is_digit(value) and common.is_digit(value_range[0]):
             return (float(value.replace(",", ".")) == float(value_range[0].replace(",", ".")))
          else:
             return (value == value_range[0])
@@ -162,7 +162,7 @@ rule_library.append(rule)
 # Not equal [9]
 def not_equal_to(value, value_range):
     if value_range:
-        if common.is_digit(value_range[0]):
+        if common.is_digit(value) and common.is_digit(value_range[0]):
             return (float(value.replace(",", ".")) != float(value_range[0].replace(",", ".")))
         else:
             return (value != value_range[0])
