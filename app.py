@@ -89,6 +89,8 @@ class App(Tk):
         self.utilitiesmenu.add_command(label="Outlier detection (Ensemble model)", command=self.open_od_window)
         self.utilitiesmenu.add_command(label="Value frequency display", command=self.open_vfd_window)
         self.utilitiesmenu.add_separator()
+        self.utilitiesmenu.add_command(label="Performance monitor", command=self.open_performance_window)
+        self.utilitiesmenu.add_separator()
         self.utilitiesmenu.add_command(label="Parallel processing workers", command=self.open_ppw_window)
         self.menubar.add_cascade(label="Utilities", menu=self.utilitiesmenu)
 
@@ -206,6 +208,9 @@ class App(Tk):
 
     def open_vfd_window(self):
         self.vfd_window = ValueFrequencyDisplayWindow(self, parent=self)
+
+    def open_performance_window(self):
+        self.performance_window = PerformanceDisplayWindow(self)
 
     def open_ppw_window(self):
         self.ppw_window = WorkersManagementWindow(self, parent=self)
@@ -401,8 +406,8 @@ class App(Tk):
     def close_actions(self, func):
         if func != self.show_exec_panel_in_server_mode:
             self.engine.clear_outliers()
+        # Garbage collector
         gc.collect()
-        print('\n--> MEMORY USAGE:', psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
 
     def result_display(self, start_row, end_row, exec_time, exec_panel_func):
         self.enable_text_area()
@@ -1445,6 +1450,62 @@ class ValueFrequencyDisplayWindow(tk.Toplevel):
 
         #self.focus()
         self.grab_set()
+
+class PerformanceDisplayWindow(tk.Toplevel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("560x280")
+        self.title("Performance Monitor")
+
+        self.RUNNING_FLAG = True
+
+        self.control_frame = tk.Frame(self, borderwidth=2, relief="groove")
+        self.control_frame.pack(fill=tk.X, side=tk.TOP)
+        self.col_label = ttk.Label(self.control_frame, text='Select column:')
+        self.col_label.pack(anchor=tk.W, padx=5, pady=5)
+
+        self.exitbtn = ttk.Button(self, text='Terminate Performance Monitor')
+        self.exitbtn.pack(fill=tk.X, side=tk.BOTTOM)
+        self.exitbtn.bind('<Button-1>', self.terminate_monitor)
+
+        self.protocol("WM_DELETE_WINDOW", self.terminate_monitor)
+
+        self.monitor_thread = threading.Thread(target=self.performance_monitor, args=())
+        self.monitor_thread.start()
+
+        #self.focus()
+        self.grab_set()
+
+    def performance_monitor(self):
+        while self.RUNNING_FLAG:
+            # CPU usage
+            cpu_usage = psutil.cpu_percent(interval=1)
+            print(f"CPU Usage: {cpu_usage}%")
+            
+            # Memory usage
+            memory = psutil.virtual_memory()
+            print(f"Memory Usage: {memory.percent}%")
+            
+            print(f"Process Memory Usage: {round(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2, 2)} MB")
+            
+            # Disk usage
+            disk_usage = psutil.disk_usage('/')
+            print(f"Disk Usage: {disk_usage.percent}%")
+            
+            # Network usage
+            network = psutil.net_io_counters()
+            print(f"Ethernet: Bytes Sent: {network.bytes_sent}, Bytes Received: {network.bytes_recv}")
+            
+            # Adding a separator for readability
+            print("-" * 50)
+            
+            # Wait for a few seconds before the next update
+            time.sleep(5)
+
+    def terminate_monitor(self, event=None):
+        self.RUNNING_FLAG = False
+        self.monitor_thread.join()
+        self.destroy()
 
 if __name__ == "__main__":
     myapp = App()
