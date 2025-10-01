@@ -8,10 +8,9 @@
 # georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
-import os, sys, gc
-import psutil
-import json
+import os, gc, sys
 import time
+import psutil
 import tkinter as tk
 import tkinter.font
 import v_utilities as util
@@ -21,7 +20,6 @@ import v_server as server
 import v_client as client
 import pyperclip
 import threading
-import numpy as np
 from v_engine import RuleEngine
 from tkinter import Tk
 from tkinter import ttk
@@ -400,6 +398,12 @@ class App(Tk):
     def show_exec_panel_in_server_mode(self):
         self.show_exec_panel_without_fire()
 
+    def close_actions(self, func):
+        if func != self.show_exec_panel_in_server_mode:
+            self.engine.clear_outliers()
+        gc.collect()
+        print('\n--> MEMORY USAGE:', psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2)
+
     def result_display(self, start_row, end_row, exec_time, exec_panel_func):
         self.enable_text_area()
         self.clear_text_area()
@@ -411,10 +415,7 @@ class App(Tk):
         self.total_label['text'] = "Total invalid values: " + str(total)
         self.text_area.insert(tk.END, txt_content)
         self.disable_text_area()
-        if exec_panel_func != self.show_exec_panel_in_server_mode:
-            self.engine.clear_outliers()
-        #print('\n--> MEMORY USAGE:', psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2, '\n')
-        gc.collect()
+        self.close_actions(exec_panel_func)
 
     def rule_handler(self):
         if self.engine and len(self.engine.rules) > 0:

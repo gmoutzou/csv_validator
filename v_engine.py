@@ -6,7 +6,6 @@
 # georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
-import pandas as pd
 import threading
 import functools
 

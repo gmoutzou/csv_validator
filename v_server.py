@@ -12,9 +12,8 @@ import socket
 import hashlib
 import pandas as pd
 import v_utilities as util
-#import v_local_library as local
-#from tqdm import tqdm
 from io import StringIO
+#from tqdm import tqdm
 
 
 IP = socket.gethostbyname(socket.gethostname())

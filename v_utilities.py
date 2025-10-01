@@ -6,7 +6,7 @@
 # georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
-import io, os, re, sys
+import io, re
 import csv
 import pandas as pd
 import numpy as np
