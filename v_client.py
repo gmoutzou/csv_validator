@@ -7,6 +7,7 @@
 #
 
 import os
+import psutil
 import json
 import socket
 import hashlib
@@ -90,13 +91,16 @@ def handle_server(addr, engine, df_string, df_hash, xml_rules, cursor, chunk_siz
                 msg = server_socket.recv(SIZE).decode(FORMAT)
                 if msg == "@ANOMALIES-START@":
                     while True:
+                        server_socket.send("Waiting Anomalies.".encode(FORMAT))
                         data = server_socket.recv(SIZE*4).decode(FORMAT)
                         if not data or data == "@ANOMALIES-END@":
                             break
                         anomalies_json += data
-                        server_socket.send("Anomalies chunk received.".encode(FORMAT))
-                #print(anomalies_json)
-                anomalies_dict = json.loads(anomalies_json)
+                try:        
+                    anomalies_dict = json.loads(anomalies_json)
+                    #print(anomalies_dict)
+                except Exception as e:
+                    print(f"Error while loading the json: {repr(e)}")
                 try:
                     engine.anomaly_detection(column=None, result=anomalies_dict, is_dictionary=True)
                 except Exception as e:

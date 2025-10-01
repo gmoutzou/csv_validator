@@ -8,7 +8,9 @@
 # georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
-import os, sys
+import os, sys, gc
+import psutil
+import json
 import time
 import tkinter as tk
 import tkinter.font
@@ -36,7 +38,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="4.4.1"
+        self.version="5.0.3"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -395,6 +397,9 @@ class App(Tk):
     def show_exec_panel_without_fire(self):
         self.exec_frame.pack(after=self.rule_frame, anchor=tk.W)
 
+    def show_exec_panel_in_server_mode(self):
+        self.show_exec_panel_without_fire()
+
     def result_display(self, start_row, end_row, exec_time, exec_panel_func):
         self.enable_text_area()
         self.clear_text_area()
@@ -406,6 +411,10 @@ class App(Tk):
         self.total_label['text'] = "Total invalid values: " + str(total)
         self.text_area.insert(tk.END, txt_content)
         self.disable_text_area()
+        if exec_panel_func != self.show_exec_panel_in_server_mode:
+            self.engine.clear_outliers()
+        #print('\n--> MEMORY USAGE:', psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2, '\n')
+        gc.collect()
 
     def rule_handler(self):
         if self.engine and len(self.engine.rules) > 0:
@@ -424,7 +433,7 @@ class App(Tk):
                 self.engine.fire_all_rules()
                 end = time.time()
                 self.result_display(1, self.engine.df.shape[0], end - start, self.show_exec_panel)
-
+            
     def copy_to_clipboard(self):
         content = self.text_area.get("1.0", tk.END)
         pyperclip.copy(content)
@@ -434,7 +443,7 @@ class App(Tk):
         self.text_area['fg'] = fg_color
 
     def gui_callback(self, start_row, end_row, exec_time):
-        self.result_display(start_row, end_row, exec_time, self.show_exec_panel_without_fire)
+        self.result_display(start_row, end_row, exec_time, self.show_exec_panel_in_server_mode)
 
     def enable_server_mode(self):
         if self.engine is not None and self.engine.df is not None and self.server_thread is None:
@@ -1302,7 +1311,7 @@ class WorkersManagementWindow(tk.Toplevel):
         _listbox_fill()
 
         #self.focus()
-        self.wait_visibility()
+        #self.wait_visibility()
         self.grab_set()
 
     def event_handler(self, server_list):
@@ -1434,7 +1443,6 @@ class ValueFrequencyDisplayWindow(tk.Toplevel):
         self.scrollbar.config(command=self.listbox.yview)
 
         #self.focus()
-        #self.wait_visibility()
         self.grab_set()
 
 if __name__ == "__main__":

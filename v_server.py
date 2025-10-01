@@ -89,11 +89,11 @@ def fire_all_client_rules(client_socket, engine, callback):
                 print(f" -- Error while fire client rules and get the result in json: {repr(e)}")
         client_socket.send("@ANOMALIES-START@".encode(FORMAT))
         for i in range(0, len(anomalies_json), STRINGCHUNKSIZE*4):
+            msg = client_socket.recv(SIZE).decode(FORMAT)
             data = anomalies_json[i:i+(STRINGCHUNKSIZE*4)]
             if not data:
                 break
             client_socket.send(data.encode(FORMAT))
-            msg = client_socket.recv(SIZE).decode(FORMAT)
     except Exception as e:
         print(f" -- Error while handle anomalies: {repr(e)}")
         success_flag = False
