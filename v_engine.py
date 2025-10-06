@@ -51,7 +51,6 @@ class RuleEngine():
         self.acceptable_values[index] = value_range
 
     def anomaly_detection(self, column, result, is_dictionary=False):
-        #print('--> start anomaly detection', 'Thread ID', threading.current_thread().ident)
         if is_dictionary:
             #self.cv.acquire()
             #while self.process_flag:
@@ -60,7 +59,6 @@ class RuleEngine():
             with self.lock:
                 for k, v in result.items():
                     invalid_list = [tuple(val) for val in v]
-                    #print('Invalid values for column', k, invalid_list)
                     if not k in self.anomalies:
                         self.anomalies[k] = invalid_list
                     else:
@@ -137,17 +135,17 @@ class RuleEngine():
             """
             self.anomaly_detection(column, result)
 
+        shift = 1
         self.clear_outliers()
         if self.rows == -1:
             self.rows = self.df.shape[0]
 
         # Get the invalid values from cross validation
         if self.cross_validation and len(self.rules) >= 2:
-            shift = 1
-            for row in self.df[self.data_cursor:self.rows].itertuples():
-                for i_when, i_then in self.cross_validation:
-                    when_col_idx = self.df.columns.get_loc(self.columns_to_check[i_when]) + shift
-                    then_col_idx = self.df.columns.get_loc(self.columns_to_check[i_then]) + shift
+            for i_when, i_then in self.cross_validation:
+                when_col_idx = self.df.columns.get_loc(self.columns_to_check[i_when]) + shift
+                then_col_idx = self.df.columns.get_loc(self.columns_to_check[i_then]) + shift
+                for row in self.df[self.data_cursor:self.rows].itertuples():
                     if self.rules[i_when].apply(row[when_col_idx], self.acceptable_values[i_when])[1] == True and self.rules[i_then].apply(row[then_col_idx], self.acceptable_values[i_then])[1] == False:
                         invalid_list = [(row.Index + shift, row[then_col_idx])]
                         with self.lock:
@@ -162,9 +160,9 @@ class RuleEngine():
             for i, c in enumerate(self.columns_to_check):
                 # If the column is in the cross validation, ignore it
                 if self.cross_validation:
-                    for j, k in self.cross_validation:
-                        if i != j and i != k:
-                            fire_without_op(i, c)
+                    cv_flat_list = [item for t in self.cross_validation for item in t]
+                    if i not in cv_flat_list:
+                        fire_without_op(i, c)
                 else:
                     fire_without_op(i, c)
         # Rule set with logical operator
@@ -177,9 +175,9 @@ class RuleEngine():
             if self.cross_validation:
                 colset_without_cv = set()
                 for col in colset:
-                    for j, k in self.cross_validation:
-                        if col != self.columns_to_check[j] and col != self.columns_to_check[k]:
-                            colset_without_cv.add(col)
+                    cv_flat_list = [self.columns_to_check[item] for t in self.cross_validation for item in t]
+                    if col not in cv_flat_list:
+                        colset_without_cv.add(col)
                 colset = colset_without_cv
             # Iterate over column set and apply the corresponding rule function, group the results by column
             total_results = [[list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), self.df[c][self.data_cursor:self.rows].tolist())) for i, c in enumerate(self.columns_to_check) if c == x] for x in colset]

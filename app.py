@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.0.3"
+        self.version="5.0.4"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -404,9 +404,11 @@ class App(Tk):
         self.show_exec_panel_without_fire()
 
     def close_actions(self, func):
+        """
         if func != self.show_exec_panel_in_server_mode:
             self.engine.clear_outliers()
-        # Garbage collector
+        """
+        # Garbage collector (Free Memory)
         gc.collect()
 
     def result_display(self, start_row, end_row, exec_time, exec_panel_func):
@@ -1454,15 +1456,35 @@ class ValueFrequencyDisplayWindow(tk.Toplevel):
 class PerformanceDisplayWindow(tk.Toplevel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.geometry("560x280")
+        self.geometry("360x130")
         self.title("Performance Monitor")
 
         self.RUNNING_FLAG = True
+        self.RUNNING_COUNTER = 0
 
-        self.control_frame = tk.Frame(self, borderwidth=2, relief="groove")
-        self.control_frame.pack(fill=tk.X, side=tk.TOP)
-        self.col_label = ttk.Label(self.control_frame, text='Select column:')
-        self.col_label.pack(anchor=tk.W, padx=5, pady=5)
+        self.style = ttk.Style()
+        self.style.configure("custom.TLabel", foreground="blue")
+
+        self.style_2 = ttk.Style()
+        self.style_2.configure("custom2.TLabel", foreground="red")
+
+        self.monitor_frame = tk.Frame(self, borderwidth=2, relief="groove")
+        self.monitor_frame.pack(fill=tk.BOTH, expand=True, side=tk.TOP)
+        self.cpu_text = "CPU Usage: "
+        self.cpu_label = ttk.Label(self.monitor_frame, text=self.cpu_text, style='custom.TLabel')
+        self.cpu_label.pack(anchor=tk.W, padx=5, fill=tk.X)
+        self.ram_text = "Memory Usage: "
+        self.ram_label = ttk.Label(self.monitor_frame, text=self.ram_text, style='custom.TLabel')
+        self.ram_label.pack(anchor=tk.W, padx=5, fill=tk.X)
+        self.proc_mem_text = "Process Memory Usage: "
+        self.proc_mem_label = ttk.Label(self.monitor_frame, text=self.proc_mem_text, style='custom.TLabel')
+        self.proc_mem_label.pack(anchor=tk.W, padx=5, fill=tk.X)
+        self.hdd_text = "Disk Usage: "
+        self.hdd_label = ttk.Label(self.monitor_frame, text=self.hdd_text, style='custom.TLabel')
+        self.hdd_label.pack(anchor=tk.W, padx=5, fill=tk.X)
+        self.eth_text = "Ethernet: "
+        self.eth_label = ttk.Label(self.monitor_frame, text=self.eth_text, style='custom.TLabel')
+        self.eth_label.pack(anchor=tk.W, padx=5, fill=tk.X)
 
         self.exitbtn = ttk.Button(self, text='Terminate Performance Monitor')
         self.exitbtn.pack(fill=tk.X, side=tk.BOTTOM)
@@ -1480,32 +1502,45 @@ class PerformanceDisplayWindow(tk.Toplevel):
         while self.RUNNING_FLAG:
             # CPU usage
             cpu_usage = psutil.cpu_percent(interval=1)
-            print(f"CPU Usage: {cpu_usage}%")
+            self.cpu_text = f"CPU Usage: {cpu_usage}%"
+            self.cpu_label['text'] = self.cpu_text
+            #print(f"CPU Usage: {cpu_usage}%")
             
             # Memory usage
             memory = psutil.virtual_memory()
-            print(f"Memory Usage: {memory.percent}%")
-            
-            print(f"Process Memory Usage: {round(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2, 2)} MB")
+            self.ram_text = f"Memory Usage: {memory.percent}%"
+            self.ram_label['text'] = self.ram_text
+            #print(f"Memory Usage: {memory.percent}%")
+
+            # Process memory usage
+            self.proc_mem_text = f"Process Memory Usage: {round(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2, 2)} MB"
+            self.proc_mem_label['text'] = self.proc_mem_text
+            #print(f"Process Memory Usage: {round(psutil.Process(os.getpid()).memory_info().rss / 1024 ** 2, 2)} MB")
             
             # Disk usage
             disk_usage = psutil.disk_usage('/')
-            print(f"Disk Usage: {disk_usage.percent}%")
+            self.hdd_text = f"Disk Usage: {disk_usage.percent}%"
+            self.hdd_label['text'] = self.hdd_text
+            #print(f"Disk Usage: {disk_usage.percent}%")
             
             # Network usage
             network = psutil.net_io_counters()
-            print(f"Ethernet: Bytes Sent: {network.bytes_sent}, Bytes Received: {network.bytes_recv}")
+            self.eth_text = f"Ethernet: Bytes Sent: {network.bytes_sent}, Bytes Received: {network.bytes_recv}"
+            self.eth_label['text'] = self.eth_text
+            #print(f"Ethernet: Bytes Sent: {network.bytes_sent}, Bytes Received: {network.bytes_recv}")
             
             # Adding a separator for readability
-            print("-" * 50)
+            #print("-" * 50)
             
             # Wait for a few seconds before the next update
+            self.RUNNING_COUNTER += 1
             time.sleep(5)
 
     def terminate_monitor(self, event=None):
-        self.RUNNING_FLAG = False
-        self.monitor_thread.join()
-        self.destroy()
+        if self.RUNNING_COUNTER > 0:
+            self.RUNNING_FLAG = False
+            #self.monitor_thread.join()
+            self.destroy()
 
 if __name__ == "__main__":
     myapp = App()
