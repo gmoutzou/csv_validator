@@ -714,7 +714,11 @@ def amka_check(amka, value_range):
     dbl = 0
 
     # Check if the input is null
-    if not amka or amka is None:
+    if not amka:
+        return False
+    
+    # Check if the input length is 11
+    if len(amka) != 11:
         return False
     
     amka = amka.strip().zfill(11)
@@ -722,12 +726,8 @@ def amka_check(amka, value_range):
     # Check if is valid date the first 6 digits of the input
     #if not is_valid_amka_date(amka):
     #    return False
-        
-    # Check if the input length is 11
-    if len(amka) != 11:
-        return False
     
-	# Check if the input is a valid integer
+	  # Check if the input is a valid integer
     if not amka.isdigit():
         return False
     

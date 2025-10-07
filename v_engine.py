@@ -106,7 +106,6 @@ class RuleEngine():
         self.columns_to_check.clear()
         self.acceptable_values.clear()
         self.cross_validation.clear()
-        self.clear_outliers()
         self.parallel_init()
         self.logical_operator = None
 
@@ -183,7 +182,6 @@ class RuleEngine():
             total_results = [[list(map(functools.partial(self.rules[i].apply, value_range=self.acceptable_values[i]), self.df[c][self.data_cursor:self.rows].tolist())) for i, c in enumerate(self.columns_to_check) if c == x] for x in colset]
             # Alternative version
             """
-            print('*** start apply the rules')
             total_results = []
             for x in colset:
                 column_results = []
@@ -196,7 +194,6 @@ class RuleEngine():
                         column_results.append(rule_results)
                 if column_results:
                     total_results.append(column_results)
-            print('*** end apply the rules')
             """
             # Set the logical operator function
             if self.logical_operator == "AND":

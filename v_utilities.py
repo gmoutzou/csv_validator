@@ -84,16 +84,20 @@ def get_delimiter(filename):
 
 def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None, jlx_spec=None, fwf_spec=None):
     df = None
-    if filename.endswith('.csv'):
-        df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type)
-    elif filename.endswith('.xlsx'):
-        df = pd.read_excel(filename, dtype=object)
-    elif filename.endswith('.json'):
-        df = pd.read_json(filename, dtype=object)
-    elif filename.endswith('.jlx'):
-        df = jlx2df(filename, jlx_spec)
-    else:
-        df = fwf2df(filename, fwf_spec)
+    try:
+        if filename.endswith('.csv'):
+            df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type)
+        elif filename.endswith('.xlsx'):
+            df = pd.read_excel(filename, dtype=str)
+        elif filename.endswith('.json'):
+            df = pd.read_json(filename, dtype=str)
+        elif filename.endswith('.jlx'):
+            df = jlx2df(filename, jlx_spec)
+        else:
+            df = fwf2df(filename, fwf_spec)
+    except Exception as e:
+        print(repr(e))
+        pass
     return df
 
 def is_digit(n):
