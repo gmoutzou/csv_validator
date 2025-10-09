@@ -84,6 +84,7 @@ def get_delimiter(filename):
 
 def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None, jlx_spec=None, fwf_spec=None):
     df = None
+    above_threshold = False
     try:
         if filename.endswith('.csv'):
             df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type)
@@ -98,7 +99,15 @@ def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', typ
     except Exception as e:
         print(repr(e))
         pass
-    return df
+    if df is not None and filename.endswith('TR.ELL.csv') and 'FIELD_R' in df:
+        try:
+            t = 0.1
+            v = df['FIELD_R'].value_counts(normalize=True)['3']
+            above_threshold = v > t
+        except Exception as e:
+            print(repr(e))
+            pass
+    return df, above_threshold
 
 def is_digit(n):
     try:

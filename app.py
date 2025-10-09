@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.0.5"
+        self.version="5.0.6"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -165,8 +165,10 @@ class App(Tk):
                 jlx_spec = jlx_config['specification']
                 fwf_config = cfg.load_config(section='FWF')
                 self.engine = RuleEngine()
-                self.engine.df = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config)
+                self.engine.df, above_threshold = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config)
                 if self.engine is not None and self.engine.df is not None:
+                    if above_threshold:
+                        mb.showwarning(title="Warning!", message="The frequency of the value '3' in FIELD_R column is above the threshold!", parent=self)
                     self.engine.df = util.get_df_as_type_string(self.engine.df)
                     self.data_structure()
                     self.show_rule_panel()
