@@ -102,7 +102,7 @@ def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', typ
     if df is not None and filename.endswith('TR.ELL.csv') and 'FIELD_R' in df:
         try:
             t = 0.1
-            v = df['FIELD_R'].value_counts(normalize=True)['3']
+            v = get_col_val_frq(df, 'FIELD_R', percentage=False)['3']
             above_threshold = v > t
         except Exception as e:
             print(repr(e))
@@ -463,3 +463,8 @@ def change_rule_index_in_cv(i, cv):
         if i < k:
             k -= 1
         cv[c] = (j, k)
+
+def get_col_val_frq(df, col, percentage=False):
+    if percentage:
+        return df[col].value_counts(normalize=True) * 100
+    return df[col].value_counts(normalize=True)

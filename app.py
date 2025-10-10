@@ -1417,8 +1417,8 @@ class ValueFrequencyDisplayWindow(tk.Toplevel):
             self.listbox.delete(0, tk.END)
 
         def listbox_fill():
-            val_freq = parent.engine.df[self.col.get()].value_counts(normalize=True) * 100
-            for i, v in val_freq.items():
+            vf = util.get_col_val_frq(parent.engine.df, self.col.get(), percentage=True)
+            for i, v in vf.items():
                 if i == '':
                     i = 'NULL'
                 self.listbox.insert(tk.END, str(i) + ' --> ' + str(round(v, 2)) + '%')
