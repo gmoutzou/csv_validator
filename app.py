@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.0.6"
+        self.version="5.1.1"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -47,6 +47,7 @@ class App(Tk):
         self.server_thread = None
         self.server_list = []
         self.vlib = RuleLibrary()
+        self.on_the_fly_mode = False
 
         # Create the application variables
         self.csv_file = tk.StringVar()
@@ -59,6 +60,8 @@ class App(Tk):
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="Enable server mode", command=self.enable_server_mode)
         self.filemenu.add_command(label="Disable server mode", command=self.disable_server_mode)
+        self.filemenu.add_command(label="Enable on the fly mode", command=self.enable_otf_mode)
+        self.filemenu.add_command(label="Disable on the fly mode", command=self.disable_otf_mode)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="CSV Configuration", command=self.open_csv_config_window)
         self.filemenu.add_command(label="JL10 Configuration", command=self.open_jl10_config_window)
@@ -148,6 +151,7 @@ class App(Tk):
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.init_state()
+        self.init_otf_menu()
         self.check_for_updates(infomsg=False)
 
     def run_process(self, var, index, mode):
@@ -164,17 +168,19 @@ class App(Tk):
                 jlx_config = cfg.load_config(section='JL10')
                 jlx_spec = jlx_config['specification']
                 fwf_config = cfg.load_config(section='FWF')
+                nrows = 0 if self.on_the_fly_mode else None
                 self.engine = RuleEngine()
-                self.engine.df, above_threshold = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config)
+                self.engine.df, above_threshold = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config, nrows=nrows)
                 if self.engine is not None and self.engine.df is not None:
                     if above_threshold:
-                        mb.showwarning(title="Warning!", message="The frequency of the value '3' in FIELD_R column is above the threshold!", parent=self)
+                        mb.showwarning(title="Warning!", message="The value frequencies in FIELD_R column is above the threshold!", parent=self)
                     self.engine.df = util.get_df_as_type_string(self.engine.df)
                     self.data_structure()
                     self.show_rule_panel()
-                    self.enable_export_menu()
-                    self.enable_data_menu()
-                    self.init_server_menu()
+                    if not self.on_the_fly_mode:
+                        self.enable_export_menu()
+                        self.enable_data_menu()
+                        self.init_server_menu()
                 else:
                     self.engine = None
                     mb.showwarning(title="Warning!", message="Something went wrong with file reading!", parent=self)
@@ -307,7 +313,9 @@ class App(Tk):
                 mb.showinfo(title="No newer version", message="You are running the latest vesion of Validator!", parent=self)
 
     def init_state(self):
-        self.engine = None
+        if self.engine:
+            self.engine.clear()
+            self.engine = None
         if self.server_thread:
             server.RUNFLAG = False
             self.enable_dummy_client_mode()
@@ -320,6 +328,7 @@ class App(Tk):
         self.hide_fire_panel()
         self.hide_exec_panel()
         self.disable_server_menu()
+        gc.collect()
 
     def enable_export_menu(self):
         self.filemenu.entryconfig("Export to Excel", state="normal")
@@ -360,6 +369,14 @@ class App(Tk):
     def disable_server_menu(self):
         self.filemenu.entryconfig("Enable server mode", state="disabled")
         self.filemenu.entryconfig("Disable server mode", state="disabled")
+
+    def init_otf_menu(self):
+        self.filemenu.entryconfig("Enable on the fly mode", state="normal")
+        self.filemenu.entryconfig("Disable on the fly mode", state="disabled")
+
+    def reverse_otf_menu(self):
+        self.filemenu.entryconfig("Enable on the fly mode", state="disabled")
+        self.filemenu.entryconfig("Disable on the fly mode", state="normal")
 
     def disable_text_area(self):
         self.text_area.configure(state='disabled')
@@ -419,13 +436,34 @@ class App(Tk):
         total, txt_content = util.get_result(self.engine.anomalies)
         self.text_area_style('black', 'white')
         exec_panel_func()
-        self.proc_label['text'] = "Processed rows: " +  str(start_row) + " - " + str(end_row)
+        if start_row < 0 or end_row < 0:
+            self.proc_label['text'] = "Processed rows: ALL"
+        else:
+            self.proc_label['text'] = "Processed rows: " +  str(start_row) + " - " + str(end_row)
         self.exec_label['text'] = "Execution time: " + str(exec_time) + " seconds"
         self.total_label['text'] = "Total invalid values: " + str(total)
         self.text_area.insert(tk.END, txt_content)
         self.disable_text_area()
         self.close_actions(exec_panel_func)
+    """
+    def init_result_display_on_the_fly_mode(self, exec_panel_func):
+        self.enable_text_area()
+        self.clear_text_area()
+        self.text_area_style('black', 'white')
+        exec_panel_func()
 
+    def result_display_on_the_fly_mode(self, result):
+        #res = '-> Row: ' + str(result[0]) + ', Value: ' + str(result[1]) + '\n'
+        res = f"--> Column: {result[0]}, Row: {result[1]}, Value: {result[2]}\n"
+        self.text_area.insert(tk.END, res)
+
+    def finalize_result_display_on_the_fly_mode(self, exec_time, total):
+        self.proc_label['text'] = "Processed rows: ALL"
+        self.exec_label['text'] = "Execution time: " + str(exec_time) + " seconds"
+        self.total_label['text'] = "Total invalid values: " + str(total)
+        self.disable_text_area()
+        self.close_actions(None)
+    """
     def rule_handler(self):
         if self.engine and len(self.engine.rules) > 0:
             self.show_fire_panel()
@@ -436,13 +474,25 @@ class App(Tk):
     def fire_all_rules(self, event):
         self.engine.parallel_init()
         if self.engine and len(self.engine.rules) > 0:
-            if len(self.server_list) > 0:
-                self.enable_client_mode()
-            else:
+            if self.on_the_fly_mode:
+                #self.init_result_display_on_the_fly_mode(self.show_exec_panel)
+                #invalid_counter = 0
                 start = time.time()
-                self.engine.fire_all_rules()
+                self.engine.fire_all_rules_on_the_fly(self.csv_file.get(), cfg.load_config()['delimiter'])
+                #for r in self.engine.fire_all_rules_on_the_fly_v2(self.csv_file.get(), cfg.load_config()['delimiter']):
+                #    self.result_display_on_the_fly_mode(r)
+                #    invalid_counter += 1
                 end = time.time()
-                self.result_display(1, self.engine.df.shape[0], end - start, self.show_exec_panel)
+                #self.finalize_result_display_on_the_fly_mode(end - start, invalid_counter)
+                self.result_display(-1, -1, end - start, self.show_exec_panel)
+            else:
+                if len(self.server_list) > 0:
+                    self.enable_client_mode()
+                else:
+                    start = time.time()
+                    self.engine.fire_all_rules()
+                    end = time.time()
+                    self.result_display(1, self.engine.df.shape[0], end - start, self.show_exec_panel)
             
     def copy_to_clipboard(self):
         content = self.text_area.get("1.0", tk.END)
@@ -502,6 +552,16 @@ class App(Tk):
     
     def enable_dummy_client_mode(self):
         client.main(engine=None, server_list=None, chunk=None, dummy=True)
+
+    def enable_otf_mode(self):
+        self.on_the_fly_mode = True
+        self.reverse_otf_menu()
+        self.csv_file.set('')
+
+    def disable_otf_mode(self):
+        self.on_the_fly_mode = False
+        self.init_otf_menu()
+        self.csv_file.set('')
 
     def on_closing(self):
         sys.exit()

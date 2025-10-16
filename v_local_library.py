@@ -60,7 +60,10 @@ rule_library.clear()
 # In value range [0]
 def in_value_range(value, value_range):
     if value_range and len(value_range) == 2:
-        return (float(value.replace(',', '.')) >= float(value_range[0].replace(',', '.')) and float(value.replace(',', '.')) <= float(value_range[1].replace(',', '.')))
+        if common.is_digit(value) and common.is_digit(value_range[0]) and common.is_digit(value_range[1]):
+            return float(value_range[0].replace(',', '.')) <= float(value.replace(',', '.')) <= float(value_range[1].replace(',', '.'))
+        else:
+            return (value_range[0] <= value <= value_range[1])
     else:
         return True
 
@@ -82,7 +85,10 @@ rule_library.append(rule)
 # In value range [2]
 def not_in_value_range(value, value_range):
     if value_range and len(value_range) == 2:
-        return not (float(value.replace(',', '.')) >= float(value_range[0].replace(',', '.')) and float(value.replace(',', '.')) <= float(value_range[1].replace(',', '.')))
+        if common.is_digit(value) and common.is_digit(value_range[0]) and common.is_digit(value_range[1]):
+            return not (float(value_range[0].replace(',', '.')) <= float(value.replace(',', '.')) <= float(value_range[1].replace(',', '.')))
+        else:
+            return not (value_range[0] <= value <= value_range[1])
     else:
         return True
 

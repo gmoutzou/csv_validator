@@ -6,6 +6,7 @@
 # georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
+import csv
 import threading
 import functools
 
@@ -153,13 +154,15 @@ class RuleEngine():
                             else:
                                 self.anomalies[self.columns_to_check[i_then]] += invalid_list
 
+        cv_flat_list = None
         # Simple rule set
         if not self.logical_operator:
+            if self.cross_validation:
+                cv_flat_list = [item for t in self.cross_validation for item in t]
             # Iterate over columns_to_check and apply the corresponding rule function
             for i, c in enumerate(self.columns_to_check):
                 # If the column is in the cross validation, ignore it
-                if self.cross_validation:
-                    cv_flat_list = [item for t in self.cross_validation for item in t]
+                if cv_flat_list:
                     if i not in cv_flat_list:
                         fire_without_op(i, c)
                 else:
@@ -216,4 +219,120 @@ class RuleEngine():
                 # Finally get the invalid values
                 for col, res in zip(colset, aggregation_result):
                     self.anomaly_detection(col, res)
-                        
+
+    def fire_all_rules_on_the_fly(self, filename, sep):
+        def add_to_anomalies(column, row_index, value):
+            invalid_list = [(row_index, value)]
+            if not column in self.anomalies:
+                self.anomalies[column] = invalid_list
+            else:
+                self.anomalies[column] += invalid_list
+        shift = 1
+        if filename:
+            with open(filename, "r") as csvfile:
+                datareader = csv.reader(csvfile, delimiter=sep)
+                next(datareader) #skip the header
+                for i, row in enumerate(datareader):
+                    if self.cross_validation and len(self.rules) >= 2:
+                        for i_when, i_then in self.cross_validation:
+                            when_col_idx = self.df.columns.get_loc(self.columns_to_check[i_when])
+                            then_col_idx = self.df.columns.get_loc(self.columns_to_check[i_then])
+                            if self.rules[i_when].apply(row[when_col_idx], self.acceptable_values[i_when])[1] == True and self.rules[i_then].apply(row[then_col_idx], self.acceptable_values[i_then])[1] == False:
+                                add_to_anomalies(self.columns_to_check[i_then], i + shift, row[then_col_idx])
+                    cv_flat_list = None
+                    if not self.logical_operator:
+                        if self.cross_validation:
+                            cv_flat_list = [item for t in self.cross_validation for item in t]
+                        for j, c in enumerate(self.columns_to_check):
+                            idx = self.df.columns.get_loc(c)
+                            res = ()
+                            if cv_flat_list:
+                                if j not in cv_flat_list:
+                                    res = self.rules[j].apply(value=row[idx], value_range=self.acceptable_values[j])
+                            else:
+                                res = self.rules[j].apply(value=row[idx], value_range=self.acceptable_values[j])
+                            if res and res[1] == False:
+                                add_to_anomalies(c, i + shift, res[0])
+                    else:
+                        colset = set(self.columns_to_check)
+                        if self.cross_validation:
+                            colset_without_cv = set()
+                            for col in colset:
+                                cv_flat_list = [self.columns_to_check[item] for t in self.cross_validation for item in t]
+                                if col not in cv_flat_list:
+                                    colset_without_cv.add(col)
+                            colset = colset_without_cv
+                        for x in colset:
+                            column_results = []
+                            for k, c in enumerate(self.columns_to_check):
+                                if x == c:
+                                    idx = self.df.columns.get_loc(c)
+                                    res = self.rules[k].apply(value=row[idx], value_range=self.acceptable_values[k])
+                                    column_results.append(res)
+                            if column_results:
+                                idx = self.df.columns.get_loc(x)
+                                if self.logical_operator == "AND":
+                                    total_result = all(b for v, b in column_results)
+                                elif self.logical_operator == "OR":
+                                    total_result = any(b for v, b in column_results)
+                                elif self.logical_operator == "XOR":
+                                    all_elements = (b for v, b in column_results)
+                                    total_result = functools.reduce(lambda a, b: a ^ b, all_elements)
+                                if total_result == False:
+                                    add_to_anomalies(x, i + shift, row[idx])
+"""
+    def fire_all_rules_on_the_fly_v2(self, filename, sep):
+            shift = 1
+            if filename:
+                with open(filename, "r") as csvfile:
+                    datareader = csv.reader(csvfile, delimiter=sep)
+                    next(datareader) #skip the header
+                    for i, row in enumerate(datareader):
+                        if self.cross_validation and len(self.rules) >= 2:
+                            for i_when, i_then in self.cross_validation:
+                                when_col_idx = self.df.columns.get_loc(self.columns_to_check[i_when])
+                                then_col_idx = self.df.columns.get_loc(self.columns_to_check[i_then])
+                                if self.rules[i_when].apply(row[when_col_idx], self.acceptable_values[i_when])[1] == True and self.rules[i_then].apply(row[then_col_idx], self.acceptable_values[i_then])[1] == False:
+                                    yield (self.columns_to_check[i_then], i + shift, row[then_col_idx])
+                        cv_flat_list = None
+                        if not self.logical_operator:
+                            if self.cross_validation:
+                                cv_flat_list = [item for t in self.cross_validation for item in t]
+                            for j, c in enumerate(self.columns_to_check):
+                                idx = self.df.columns.get_loc(c)
+                                res = ()
+                                if cv_flat_list:
+                                    if j not in cv_flat_list:
+                                        res = self.rules[j].apply(value=row[idx], value_range=self.acceptable_values[j])
+                                else:
+                                    res = self.rules[j].apply(value=row[idx], value_range=self.acceptable_values[j])
+                                if res[1] == False:
+                                    yield (c, i + shift, res[0])
+                        else:
+                            colset = set(self.columns_to_check)
+                            if self.cross_validation:
+                                colset_without_cv = set()
+                                for col in colset:
+                                    cv_flat_list = [self.columns_to_check[item] for t in self.cross_validation for item in t]
+                                    if col not in cv_flat_list:
+                                        colset_without_cv.add(col)
+                                colset = colset_without_cv
+                            for x in colset:
+                                column_results = []
+                                for k, c in enumerate(self.columns_to_check):
+                                    if x == c:
+                                        idx = self.df.columns.get_loc(c)
+                                        res = self.rules[k].apply(value=row[idx], value_range=self.acceptable_values[k])
+                                        column_results.append(res)
+                                if column_results:
+                                    idx = self.df.columns.get_loc(x)
+                                    if self.logical_operator == "AND":
+                                        total_result = all(b for v, b in column_results)
+                                    elif self.logical_operator == "OR":
+                                        total_result = any(b for v, b in column_results)
+                                    elif self.logical_operator == "XOR":
+                                        all_elements = (b for v, b in column_results)
+                                        total_result = functools.reduce(lambda a, b: a ^ b, all_elements)
+                                    if total_result == False:
+                                        yield (x, i + shift, row[idx])
+"""

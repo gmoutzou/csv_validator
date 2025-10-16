@@ -82,12 +82,12 @@ def get_delimiter(filename):
         dialect = sniffer.sniff(f.readline())
         return dialect.delimiter
 
-def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None, jlx_spec=None, fwf_spec=None):
+def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None, jlx_spec=None, fwf_spec=None, nrows=None):
     df = None
     above_threshold = False
     try:
         if filename.endswith('.csv'):
-            df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type)
+            df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type, nrows=nrows)
         elif filename.endswith('.xlsx'):
             df = pd.read_excel(filename, dtype=str)
         elif filename.endswith('.json'):
@@ -99,10 +99,10 @@ def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', typ
     except Exception as e:
         print(repr(e))
         pass
-    if df is not None and filename.endswith('TR.ELL.csv') and 'FIELD_R' in df:
+    if df is not None and filename.endswith('TR.ELL.csv') and 'FIELD_R' in df and nrows is None:
         try:
-            t = 0.1
-            v = get_col_val_frq(df, 'FIELD_R', percentage=False)['3']
+            t = 0.08
+            v = get_col_val_frq(df, 'FIELD_R', percentage=False)['1'] + get_col_val_frq(df, 'FIELD_R', percentage=False)['2'] + get_col_val_frq(df, 'FIELD_R', percentage=False)['3']
             above_threshold = v > t
         except Exception as e:
             print(repr(e))
