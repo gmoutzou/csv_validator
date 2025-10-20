@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.1.1"
+        self.version="5.2.0"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -95,6 +95,8 @@ class App(Tk):
         self.utilitiesmenu.add_command(label="Performance monitor", command=self.open_performance_window)
         self.utilitiesmenu.add_separator()
         self.utilitiesmenu.add_command(label="Parallel processing workers", command=self.open_ppw_window)
+        self.utilitiesmenu.add_separator()
+        self.utilitiesmenu.add_command(label="Dxhub checks", command=self.open_dxhub_window)
         self.menubar.add_cascade(label="Utilities", menu=self.utilitiesmenu)
 
         self.helpmenu = tk.Menu(self.menubar, tearoff=0)
@@ -170,7 +172,7 @@ class App(Tk):
                 fwf_config = cfg.load_config(section='FWF')
                 nrows = 0 if self.on_the_fly_mode else None
                 self.engine = RuleEngine()
-                self.engine.df, above_threshold = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config, nrows=nrows)
+                self.engine.df, tr_ell, above_threshold = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config, nrows=nrows)
                 if self.engine is not None and self.engine.df is not None:
                     if above_threshold:
                         mb.showwarning(title="Warning!", message="The value frequencies in FIELD_R column is above the threshold!", parent=self)
@@ -181,6 +183,8 @@ class App(Tk):
                         self.enable_export_menu()
                         self.enable_data_menu()
                         self.init_server_menu()
+                    if tr_ell:
+                        self.import_tr_ell_template()
                 else:
                     self.engine = None
                     mb.showwarning(title="Warning!", message="Something went wrong with file reading!", parent=self)
@@ -222,6 +226,9 @@ class App(Tk):
 
     def open_ppw_window(self):
         self.ppw_window = WorkersManagementWindow(self, parent=self)
+
+    def open_dxhub_window(self):
+        self.dxhub_window = DxhubWindow(self, engine=self.engine)
 
     def open_rules_window(self, event):
         self.rules_window = RulesManagementWindow(self, engine=self.engine, columns=util.get_df_columns(self.engine.df), parent=self)
@@ -353,6 +360,7 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="normal")
         self.utilitiesmenu.entryconfig("Value frequency display", state="normal")
         self.utilitiesmenu.entryconfig("Parallel processing workers", state="normal")
+        self.utilitiesmenu.entryconfig("Dxhub checks", state="normal")
 
     def disable_data_menu(self):
         self.utilitiesmenu.entryconfig("Data structure", state="disabled")
@@ -361,6 +369,7 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="disabled")
         self.utilitiesmenu.entryconfig("Value frequency display", state="disabled")
         self.utilitiesmenu.entryconfig("Parallel processing workers", state="disabled")
+        self.utilitiesmenu.entryconfig("Dxhub checks", state="disabled")
 
     def init_server_menu(self):
         self.filemenu.entryconfig("Enable server mode", state="normal")
@@ -565,6 +574,30 @@ class App(Tk):
 
     def on_closing(self):
         sys.exit()
+
+    def import_tr_ell_template(self):
+        filename = "template_TR.ELL.xml"
+        if os.path.exists(filename):
+            rules_attrib, xml_rules, cross_validation = util.import_from_xml_template(filename)
+            op = str(None)
+            df_colums = util.get_df_columns(self.engine.df)
+            success_flag = True
+            if "logical_operator" in rules_attrib:
+                op = rules_attrib['logical_operator']
+            if op == "AND" or op == "OR" or op == "XOR":
+                self.engine.logical_operator = op
+            for x in xml_rules:
+                if x[0] not in df_colums:
+                    success_flag = False
+                    break
+                for r in self.vlib.rule_library:
+                    if x[1] == r.name:
+                        self.engine.add_rule(rule=r, column=x[0], value_range=x[2])
+            for i_when, i_then in cross_validation:
+                self.engine.add_cross_validation(i_when, i_then)
+            if success_flag:
+                self.show_fire_panel()
+                self.fire_all_rules(None)
 
 class RulesManagementWindow(tk.Toplevel):
     def __init__(self, *args, engine=None, columns=None, parent=None, **kwargs):
@@ -1603,6 +1636,52 @@ class PerformanceDisplayWindow(tk.Toplevel):
             self.RUNNING_FLAG = False
             #self.monitor_thread.join()
             self.destroy()
+
+class DxhubWindow(tk.Toplevel):
+    def __init__(self, *args, engine=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("460x220")
+        self.title("Dxhub checks")
+
+        def run_process(event):
+            if self.service.get() and self.parameter.get() and self.column.get():
+                success_flag = util.get_dxhub_result(engine.df, self.service.get(), self.parameter.get(), self.column.get())
+                if success_flag:
+                    mb.showinfo(title="Success!", message="Process completed successfully! Use the export options to get the results.", parent=self)
+                    self.destroy()
+                else:
+                    mb.showerror(title="Error", message="An unexpected error has occured.")
+
+        self.columns = util.get_df_columns(engine.df)
+        
+        self.service = tk.StringVar()
+        self.parameter = tk.StringVar()
+        self.column = tk.StringVar()
+
+        self.service_label = ttk.Label(self, text='Service:')
+        self.service_label.pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
+        self.service_chooser = ttk.Combobox(self, textvariable=self.service, state="readonly")
+        self.service_chooser['values'] = ['IDENTITY', 'REGISTRYSERVICE', 'AMKA2DATA', 'GETDEATHRECORDS', 'GETMARRIAGERECORDS', 'GETAGREEMENTRECORDS', 'LAWYERINFO']
+        self.service_chooser.pack(fill=tk.X, pady=5)
+
+        self.parameter_label = ttk.Label(self, text='Parameter:')
+        self.parameter_label.pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
+        self.parameter_chooser = ttk.Combobox(self, textvariable=self.parameter, state="readonly")
+        self.parameter_chooser['values'] = ['amka', 'afm']
+        self.parameter_chooser.pack(fill=tk.X, pady=5)
+
+        self.column_label = ttk.Label(self, text='Column:')
+        self.column_label.pack(anchor=tk.W, padx=5, pady=5)
+        self.column_chooser = ttk.Combobox(self, textvariable=self.column, state="readonly")
+        self.column_chooser.pack(fill=tk.X, pady=5)
+        self.column_chooser['values'] = self.columns
+
+        self.runbtn = ttk.Button(self, text='Run process')
+        self.runbtn.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
+        self.runbtn.bind('<Button-1>', run_process)
+
+        #self.focus()
+        self.grab_set()
 
 if __name__ == "__main__":
     myapp = App()

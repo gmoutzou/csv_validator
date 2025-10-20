@@ -19,6 +19,7 @@ from v_pgdev import Pgdev
 from xlsxwriter.color import Color
 from dateutil.parser import parse
 from v_outlier_detector import OutlierDetector
+from v_dxhub import Dxhub
 
 
 def print_msg_box(msg, indent=1, width=None, title=None):
@@ -85,6 +86,7 @@ def get_delimiter(filename):
 def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', type=None, jlx_spec=None, fwf_spec=None, nrows=None):
     df = None
     above_threshold = False
+    tr_ell = False
     try:
         if filename.endswith('.csv'):
             df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type, nrows=nrows)
@@ -101,13 +103,14 @@ def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', typ
         pass
     if df is not None and filename.endswith('TR.ELL.csv') and 'FIELD_R' in df and nrows is None:
         try:
+            tr_ell = True
             t = 0.08
             v = get_col_val_frq(df, 'FIELD_R', percentage=False)['1'] + get_col_val_frq(df, 'FIELD_R', percentage=False)['2'] + get_col_val_frq(df, 'FIELD_R', percentage=False)['3']
             above_threshold = v > t
         except Exception as e:
             print(repr(e))
             pass
-    return df, above_threshold
+    return df, tr_ell, above_threshold
 
 def is_digit(n):
     try:
@@ -468,3 +471,12 @@ def get_col_val_frq(df, col, percentage=False):
     if percentage:
         return df[col].value_counts(normalize=True) * 100
     return df[col].value_counts(normalize=True)
+
+def get_dxhub_result(df, service, param_name, column):
+    success_flag = True
+    try:
+        dxhub = Dxhub(service, param_name)
+        df['dxhub_result'] = [dxhub.service_call(val)[1] for val in df[column]]
+    except:
+        success_flag = False
+    return success_flag

@@ -222,11 +222,11 @@ class RuleEngine():
 
     def fire_all_rules_on_the_fly(self, filename, sep):
         def add_to_anomalies(column, row_index, value):
-            invalid_list = [(row_index, value)]
+            invalid_tuple = (row_index, value)
             if not column in self.anomalies:
-                self.anomalies[column] = invalid_list
+                self.anomalies[column] = [invalid_tuple]
             else:
-                self.anomalies[column] += invalid_list
+                self.anomalies[column].append(invalid_tuple)
         shift = 1
         if filename:
             with open(filename, "r") as csvfile:
