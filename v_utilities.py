@@ -472,10 +472,10 @@ def get_col_val_frq(df, col, percentage=False):
         return df[col].value_counts(normalize=True) * 100
     return df[col].value_counts(normalize=True)
 
-def get_dxhub_result(df, service, param_name, column):
+def get_dxhub_result(df, service, parameter, column):
     success_flag = True
     try:
-        dxhub = Dxhub(service, param_name)
+        dxhub = Dxhub(service, parameter)
         df['dxhub_result'] = [dxhub.service_call(val)[1] for val in df[column]]
     except:
         success_flag = False
