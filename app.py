@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.2.0"
+        self.version="5.3.0"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -192,7 +192,7 @@ class App(Tk):
                 self.init_state()
                 mb.showwarning(title="Warning!", message="Invalid file!", parent=self)
         else:
-            self.init_state() 
+            self.init_state()
 
     def open_csv_file(self):
         self.csv_file.set(fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV Comma Separatad Values","*.csv"), ("XLSX Spreadsheets","*.xlsx"), ("JSON Files","*.json"), ("JL10 Files","*.jlx"), ("All Files","*.*")]))
@@ -1640,17 +1640,20 @@ class PerformanceDisplayWindow(tk.Toplevel):
 class DxhubWindow(tk.Toplevel):
     def __init__(self, *args, engine=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.geometry("460x220")
+        self.geometry("460x280")
         self.title("Dxhub checks")
 
         def run_process(event):
             if self.service.get() and self.parameter.get() and self.column.get():
-                success_flag = util.get_dxhub_result(engine.df, self.service.get(), self.parameter.get(), self.column.get())
-                if success_flag:
-                    mb.showinfo(title="Success!", message="Process completed successfully! Use the export options to get the results.", parent=self)
-                    self.destroy()
-                else:
-                    mb.showerror(title="Error", message="An unexpected error has occured.")
+                self.progress_frame.pack(fill=tk.X)
+                t1 = threading.Thread(target=util.get_dxhub_result, args=(engine.df, self.service.get(), self.parameter.get(), self.column.get(), self.show_current_progress))
+                t1.start()
+                #success_flag = util.get_dxhub_result(engine.df, self.service.get(), self.parameter.get(), self.column.get(), self.show_current_progress)
+                #if success_flag:
+                #    mb.showinfo(title="Success!", message="Process completed successfully! Use the export options to get the results.", parent=self)
+                #    self.destroy()
+                #else:
+                #    mb.showerror(title="Error", message="An unexpected error has occured.")
 
         self.columns = util.get_df_columns(engine.df)
         
@@ -1667,7 +1670,7 @@ class DxhubWindow(tk.Toplevel):
         self.parameter_label = ttk.Label(self, text='Parameter:')
         self.parameter_label.pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
         self.parameter_chooser = ttk.Combobox(self, textvariable=self.parameter, state="readonly")
-        self.parameter_chooser['values'] = ['amka', 'afm']
+        self.parameter_chooser['values'] = ['afm', 'amka']
         self.parameter_chooser.pack(fill=tk.X, pady=5)
 
         self.column_label = ttk.Label(self, text='Column:')
@@ -1676,12 +1679,39 @@ class DxhubWindow(tk.Toplevel):
         self.column_chooser.pack(fill=tk.X, pady=5)
         self.column_chooser['values'] = self.columns
 
+        self.progress_frame = tk.Frame(self)
+        self.progress_frame.pack(fill=tk.X)
+        self.progress_label = ttk.Label(self.progress_frame, text='', foreground='red')
+        self.progress_label.pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
+        self.progressbar = ttk.Progressbar(self.progress_frame, orient=tk.HORIZONTAL, length=100, mode='determinate')
+        self.progressbar.configure(maximum=100)
+        self.progressbar.pack(fill=tk.X, padx=5, pady=5)
+
         self.runbtn = ttk.Button(self, text='Run process')
         self.runbtn.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
         self.runbtn.bind('<Button-1>', run_process)
 
+        self.progress_frame.forget()
+
         #self.focus()
         self.grab_set()
+
+    def show_current_progress(self, prog):
+        if prog < 0:
+            self.on_fail()
+        if 0 <= prog <= 100:
+            self.progress_label['text'] = 'Current progress: ' + str(prog) + '%'
+            self.progressbar['value'] = prog
+        if prog == 100:
+            self.on_success()
+
+    def on_success(self):
+        mb.showinfo(title="Success!", message="Process completed successfully! Use the export options to get the results.", parent=self)
+        self.destroy()
+
+    def on_fail(self):
+        mb.showerror(title="Error", message="An unexpected error has occured.")
+        self.progress_frame.forget()
 
 if __name__ == "__main__":
     myapp = App()

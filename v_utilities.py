@@ -472,11 +472,16 @@ def get_col_val_frq(df, col, percentage=False):
         return df[col].value_counts(normalize=True) * 100
     return df[col].value_counts(normalize=True)
 
-def get_dxhub_result(df, service, parameter, column):
-    success_flag = True
+def get_dxhub_result(df, service, parameter, column, callback_function):
     try:
         dxhub = Dxhub(service, parameter)
-        df['dxhub_result'] = [dxhub.service_call(val)[1] for val in df[column]]
+        #df['dxhub_result'] = [dxhub.service_call(val)[1] for val in df[column]]
+        res = []
+        total = df.shape[0]
+        for i, val in enumerate(df[column]):
+            res.append(dxhub.service_call(val)[1])
+            prog = ((i + 1) * 100) / total
+            callback_function(int(prog))
+        df['dxhub_result'] = res
     except:
-        success_flag = False
-    return success_flag
+        callback_function(-1)
