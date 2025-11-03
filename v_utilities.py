@@ -58,7 +58,10 @@ def print_result(anomalies):
         for val in v:
             print('\t-> Row: ' + str(val[0]) + '\tValue: ' + str(val[1]))
 
-def get_result(anomalies):
+def get_result(anomalies, actual_row_number=True):
+    add_header = 0
+    if not actual_row_number:
+        add_header = 1
     total = 0
     #result = '=======================\nValidation check result\n=======================\n'
     result = header_box('Validation check result')
@@ -71,8 +74,8 @@ def get_result(anomalies):
             header += header_box(msg='[' + k + '] invalid values: ' + str(inv), width=50, character='-')
             #header += '\n-----------------------'
             data += '\n' + k + '\n'
-            for val in v:
-                data += '-> Row: ' + str(val[0]) + ', Value: ' + str(val[1]) + '\n'
+            for row, val in v:
+                data += '-> Row: ' + str(row+add_header) + ', Value: ' + str(val) + '\n'
         result += header + data + '-------\n'
     return total, result
 
@@ -402,7 +405,7 @@ def jlx2df(filename, jl10_spec):
 def fwf2df(filename, fwf_spec):
     df = None
     col_spec_list = fwf_spec['specification'].split(',')
-    ignored_list = fwf_spec['ignored'].split(',')
+    ignored_list = fwf_spec['ignore'].split(',')
     try:
         with open(filename, 'r', encoding='utf-8') as file:
             data = []

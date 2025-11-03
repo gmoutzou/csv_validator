@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.3.0"
+        self.version="5.4.1"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -175,7 +175,7 @@ class App(Tk):
                 self.engine.df, tr_ell, above_threshold = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config, nrows=nrows)
                 if self.engine is not None and self.engine.df is not None:
                     if above_threshold:
-                        mb.showwarning(title="Warning!", message="The value frequencies in FIELD_R column is above the threshold!", parent=self)
+                        mb.showwarning(title="Warning!", message="FIELD_R column violates the threshold rule!", parent=self)
                     self.engine.df = util.get_df_as_type_string(self.engine.df)
                     self.data_structure()
                     self.show_rule_panel()
@@ -442,7 +442,9 @@ class App(Tk):
     def result_display(self, start_row, end_row, exec_time, exec_panel_func):
         self.enable_text_area()
         self.clear_text_area()
-        total, txt_content = util.get_result(self.engine.anomalies)
+        config = cfg.load_config(section='general')
+        actual_row_number = config['display_actual_row_number'] == 'True'
+        total, txt_content = util.get_result(self.engine.anomalies, actual_row_number)
         self.text_area_style('black', 'white')
         exec_panel_func()
         if start_row < 0 or end_row < 0:
@@ -970,7 +972,7 @@ class FixedWidthConfigWindow(tk.Toplevel):
         self.ignored_label = ttk.Label(self.ignored_panel, text='Ignore lines which start with:')
         self.ignored_label.pack(anchor=tk.W, padx=5, fill=tk.X)
         self.ignored_input = tk.Text(self.ignored_panel, height=9)
-        self.ignored_input.insert(tk.END, (cfg.load_config(filename='config.ini', section='FWF')['ignored']))
+        self.ignored_input.insert(tk.END, (cfg.load_config(filename='config.ini', section='FWF')['ignore']))
         self.ignored_input.pack(anchor=tk.W, fill=tk.X, padx=5)
 
         self.save_panel = tk.Frame(self)
@@ -984,7 +986,7 @@ class FixedWidthConfigWindow(tk.Toplevel):
         new_spec = (self.text_widget.get(1.0, "end-1c")).replace('\n', ',')
         new_ignored = (self.ignored_input.get(1.0, "end-1c")).replace('\n', ',')
         config['specification'] = new_spec
-        config['ignored'] = new_ignored
+        config['ignore'] = new_ignored
         cfg.write_config(filename='config.ini', section='FWF', config=config)
         self.destroy()
 
@@ -1235,7 +1237,7 @@ class NewDBRuleWindow(tk.Toplevel):
                     parent.listbox_fill()
                     self.destroy()
                 except:
-                    mb.showerror(title="Fail", message="Something went wrong", parent=self)
+                    mb.showerror(title="Fail", message="Something went wrong!", parent=self)
             else:
                 try:
                     util.edit_rule_in_db(pgconf=parent.dbconfig, data=(self.rule_name.get(), self.rule_description.get(), self.function_name.get(), self.function_body.get(), self.amendment))
@@ -1243,7 +1245,7 @@ class NewDBRuleWindow(tk.Toplevel):
                     parent.listbox_fill()
                     self.destroy()
                 except:
-                    mb.showerror(title="Fail", message="Something went wrong", parent=self)
+                    mb.showerror(title="Fail", message="Something went wrong!", parent=self)
 
     def init(self, rule):
         if rule:
