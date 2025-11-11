@@ -229,6 +229,7 @@ class RuleEngine():
                 self.anomalies[column].append(invalid_tuple)
         shift = 1
         if filename:
+            csv.field_size_limit(100000000)
             with open(filename, "r") as csvfile:
                 datareader = csv.reader(csvfile, delimiter=sep)
                 next(datareader) #skip the header
