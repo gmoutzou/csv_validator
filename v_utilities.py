@@ -16,6 +16,7 @@ import xml.etree.ElementTree as ET
 import v_common as common
 import v_client as client
 from v_pgdev import Pgdev
+from pathlib import Path
 from xlsxwriter.color import Color
 from dateutil.parser import parse
 from v_outlier_detector import OutlierDetector
@@ -475,16 +476,26 @@ def get_col_val_frq(df, col, percentage=False):
         return df[col].value_counts(normalize=True) * 100
     return df[col].value_counts(normalize=True)
 
-def get_dxhub_result(df, service, parameter, column, callback_function):
+def get_dxhub_result(engine, service, parameter, column, callback_function):
     try:
         dxhub = Dxhub(service, parameter)
         #df['dxhub_result'] = [dxhub.service_call(val)[1] for val in df[column]]
-        res = []
-        total = df.shape[0]
-        for i, val in enumerate(df[column]):
-            res.append(dxhub.service_call(val)[1])
+        total = engine.df.shape[0]
+        data = []
+        for i, val in enumerate(engine.df[column]):
+            #res.append(dxhub.service_call(val)[1])
+            status_code, response = dxhub.service_call(val)
+            if status_code == 999:
+                callback_function(-1)
+                break
+            for res_dict in response:
+                data.append(res_dict)
             prog = ((i + 1) * 100) / total
             callback_function(int(prog))
-        df['dxhub_result'] = res
-    except:
+        #df['dxhub_result'] = res
+        result_df = get_df_as_type_string(pd.DataFrame(data))
+        Path("./export/dxhub/").mkdir(parents=True, exist_ok=True)
+        df2xlsx(filename="./export/dxhub/results.xlsx", df=pd.concat([engine.df, result_df], axis=1), anomalies=None)
+    except Exception as e:
+        print(f"Error: {repr(e)}")
         callback_function(-1)

@@ -27,6 +27,9 @@ class RuleEngine():
         self.logical_operator = None
         self.outlier_detection_time = 0.0
         self.df = None
+
+    def set_df(self, df):
+        self.df = df
     
     def add_rule(self, rule, column, value_range):
         if column == "<<ALL>>":

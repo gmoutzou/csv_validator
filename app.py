@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.4.2"
+        self.version="5.5.1"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -96,7 +96,7 @@ class App(Tk):
         self.utilitiesmenu.add_separator()
         self.utilitiesmenu.add_command(label="Parallel processing workers", command=self.open_ppw_window)
         self.utilitiesmenu.add_separator()
-        self.utilitiesmenu.add_command(label="Dxhub checks", command=self.open_dxhub_window)
+        self.utilitiesmenu.add_command(label="Dxhub check", command=self.open_dxhub_window)
         self.menubar.add_cascade(label="Utilities", menu=self.utilitiesmenu)
 
         self.helpmenu = tk.Menu(self.menubar, tearoff=0)
@@ -360,7 +360,7 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="normal")
         self.utilitiesmenu.entryconfig("Value frequency display", state="normal")
         self.utilitiesmenu.entryconfig("Parallel processing workers", state="normal")
-        self.utilitiesmenu.entryconfig("Dxhub checks", state="normal")
+        self.utilitiesmenu.entryconfig("Dxhub check", state="normal")
 
     def disable_data_menu(self):
         self.utilitiesmenu.entryconfig("Data structure", state="disabled")
@@ -369,7 +369,7 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="disabled")
         self.utilitiesmenu.entryconfig("Value frequency display", state="disabled")
         self.utilitiesmenu.entryconfig("Parallel processing workers", state="disabled")
-        self.utilitiesmenu.entryconfig("Dxhub checks", state="disabled")
+        self.utilitiesmenu.entryconfig("Dxhub check", state="disabled")
 
     def init_server_menu(self):
         self.filemenu.entryconfig("Enable server mode", state="normal")
@@ -791,7 +791,7 @@ class RulesManagementWindow(tk.Toplevel):
         elif engine.logical_operator == "XOR":
             self.operator_xor.set(True)
         if engine.cross_validation:
-            self.listbox.insert(tk.END, "*** Cross validation checks ***")
+            self.listbox.insert(tk.END, "*** Cross validation check ***")
             for j, k in engine.cross_validation:
                 self.listbox.insert(tk.END, "When Rule #" + str(j+shift) + " Then Rule #" + str(k+shift))
 
@@ -1643,12 +1643,12 @@ class DxhubWindow(tk.Toplevel):
     def __init__(self, *args, engine=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.geometry("460x280")
-        self.title("Dxhub checks")
+        self.title("Dxhub check")
 
         def run_process(event):
             if self.service.get() and self.parameter.get() and self.column.get():
                 self.progress_frame.pack(fill=tk.X)
-                t1 = threading.Thread(target=util.get_dxhub_result, args=(engine.df, self.service.get(), self.parameter.get(), self.column.get(), self.show_current_progress))
+                t1 = threading.Thread(target=util.get_dxhub_result, args=(engine, self.service.get(), self.parameter.get(), self.column.get(), self.show_current_progress))
                 t1.start()
                 #success_flag = util.get_dxhub_result(engine.df, self.service.get(), self.parameter.get(), self.column.get(), self.show_current_progress)
                 #if success_flag:
@@ -1708,7 +1708,7 @@ class DxhubWindow(tk.Toplevel):
             self.on_success()
 
     def on_success(self):
-        mb.showinfo(title="Success!", message="Process completed successfully! Use the export options to get the results.", parent=self)
+        mb.showinfo(title="Success!", message="Process completed successfully! The results in ./export/dxhub/results.xlsx", parent=self)
         self.destroy()
 
     def on_fail(self):
