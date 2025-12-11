@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.5.1"
+        self.version="5.6.4"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -60,8 +60,8 @@ class App(Tk):
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
         self.filemenu.add_command(label="Enable server mode", command=self.enable_server_mode)
         self.filemenu.add_command(label="Disable server mode", command=self.disable_server_mode)
-        self.filemenu.add_command(label="Enable on the fly mode", command=self.enable_otf_mode)
-        self.filemenu.add_command(label="Disable on the fly mode", command=self.disable_otf_mode)
+        self.filemenu.add_command(label="Enable stream processing mode", command=self.enable_otf_mode)
+        self.filemenu.add_command(label="Disable stream processing mode", command=self.disable_otf_mode)
         self.filemenu.add_separator()
         self.filemenu.add_command(label="CSV Configuration", command=self.open_csv_config_window)
         self.filemenu.add_command(label="JL10 Configuration", command=self.open_jl10_config_window)
@@ -96,6 +96,7 @@ class App(Tk):
         self.utilitiesmenu.add_separator()
         self.utilitiesmenu.add_command(label="Parallel processing workers", command=self.open_ppw_window)
         self.utilitiesmenu.add_separator()
+        self.utilitiesmenu.add_command(label="SQL", command=self.open_sql_window)
         self.utilitiesmenu.add_command(label="Dxhub check", command=self.open_dxhub_window)
         self.menubar.add_cascade(label="Utilities", menu=self.utilitiesmenu)
 
@@ -226,6 +227,9 @@ class App(Tk):
 
     def open_ppw_window(self):
         self.ppw_window = WorkersManagementWindow(self, parent=self)
+
+    def open_sql_window(self):
+        self.sql_window = SQLWindow(self, engine=self.engine)
 
     def open_dxhub_window(self):
         self.dxhub_window = DxhubWindow(self, engine=self.engine)
@@ -360,6 +364,7 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="normal")
         self.utilitiesmenu.entryconfig("Value frequency display", state="normal")
         self.utilitiesmenu.entryconfig("Parallel processing workers", state="normal")
+        self.utilitiesmenu.entryconfig("SQL", state="normal")
         self.utilitiesmenu.entryconfig("Dxhub check", state="normal")
 
     def disable_data_menu(self):
@@ -369,6 +374,7 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="disabled")
         self.utilitiesmenu.entryconfig("Value frequency display", state="disabled")
         self.utilitiesmenu.entryconfig("Parallel processing workers", state="disabled")
+        self.utilitiesmenu.entryconfig("SQL", state="disabled")
         self.utilitiesmenu.entryconfig("Dxhub check", state="disabled")
 
     def init_server_menu(self):
@@ -380,12 +386,12 @@ class App(Tk):
         self.filemenu.entryconfig("Disable server mode", state="disabled")
 
     def init_otf_menu(self):
-        self.filemenu.entryconfig("Enable on the fly mode", state="normal")
-        self.filemenu.entryconfig("Disable on the fly mode", state="disabled")
+        self.filemenu.entryconfig("Enable stream processing mode", state="normal")
+        self.filemenu.entryconfig("Disable stream processing mode", state="disabled")
 
     def reverse_otf_menu(self):
-        self.filemenu.entryconfig("Enable on the fly mode", state="disabled")
-        self.filemenu.entryconfig("Disable on the fly mode", state="normal")
+        self.filemenu.entryconfig("Enable stream processing mode", state="disabled")
+        self.filemenu.entryconfig("Disable stream processing mode", state="normal")
 
     def disable_text_area(self):
         self.text_area.configure(state='disabled')
@@ -1708,12 +1714,56 @@ class DxhubWindow(tk.Toplevel):
             self.on_success()
 
     def on_success(self):
-        mb.showinfo(title="Success!", message="Process completed successfully! The results in ./export/dxhub/results.xlsx", parent=self)
+        mb.showinfo(title="Success!", message="Process completed successfully! The results are available in ./export/dxhub", parent=self)
         self.destroy()
 
     def on_fail(self):
-        mb.showerror(title="Error", message="An unexpected error has occured.")
+        mb.showerror(title="Error", message="An unexpected error has occurred.", parent=self)
         self.progress_frame.forget()
+
+class SQLWindow(tk.Toplevel):
+    def __init__(self, *args, engine=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry("640x540")
+        self.title("SQL Query")
+        
+        self.query = tk.StringVar()
+        self.output = tk.StringVar()
+
+        self.main_frame = tk.Frame(self)
+        self.main_frame.pack(side=tk.TOP, fill=tk.X, padx=5)
+
+        self.holder_frame = tk.Frame(self.main_frame)
+        self.holder_frame.pack(fill=tk.BOTH, expand=True, pady=5)
+
+        self.qlabel = ttk.Label(self.holder_frame, text='Query (Table name: df):').pack(fill=tk.X)
+        self.qtxt = scrolledtext.ScrolledText(self.holder_frame, bg='white', fg='blue', font=("Courier", 11, "normal"))
+        self.qtxt.pack(fill=tk.BOTH, expand=True)
+        self.qtxt.insert(tk.END, "SELECT * FROM df")
+
+        self.output_label = ttk.Label(self.main_frame, text='Output format:')
+        self.output_label.pack(anchor=tk.W, pady=5, fill=tk.X)
+        self.output_chooser = ttk.Combobox(self, textvariable=self.output, state="readonly")
+        self.output_chooser['values'] = ['HTML', 'XLSX', 'CSV', 'JSON', 'XML', 'SQL']
+        self.output_chooser.current(0)
+        self.output_chooser.pack(fill=tk.X, pady=5)
+
+        def _execute(event):
+            self.query.set(self.qtxt.get("1.0", tk.END))
+            if self.query.get() and self.output.get():
+                if util.execute_sql_query(df=engine.df, sql=self.query.get(), output=self.output.get()):
+                    if self.output.get() != "HTML":
+                        mb.showinfo(title="Success!", message="The results are available in: ./export/sql", parent=self)
+                else:
+                    mb.showerror(title="Error!", message="An error occurred processing your query.", parent=self)
+            else:
+                mb.showwarning(title="Warning!", message="Plese write an SQL query and select the output format.", parent=self)
+
+        self.exe_frame = tk.Frame(self)
+        self.exe_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
+        self.exebtn = ttk.Button(self.exe_frame, text='Execute')
+        self.exebtn.pack(fill=tk.X)
+        self.exebtn.bind('<Button-1>', _execute)
 
 if __name__ == "__main__":
     myapp = App()

@@ -6,11 +6,13 @@
 # georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
-import io, re
+import os, io, re
 import csv
 import pandas as pd
+import pandasql as ps
 import numpy as np
 import requests
+import webbrowser
 import netifaces as ni
 import xml.etree.ElementTree as ET
 import v_common as common
@@ -499,3 +501,28 @@ def get_dxhub_result(engine, service, parameter, column, callback_function):
     except Exception as e:
         print(f"Error: {repr(e)}")
         callback_function(-1)
+
+def execute_sql_query(df, sql, output="CONSOLE"):
+    try:
+        if output == "CONSOLE":
+            print(ps.sqldf(sql))
+        else:
+            Path("./export/sql/").mkdir(parents=True, exist_ok=True)
+            filename = f"./export/sql/results.{output.lower()}"
+            if output == "HTML":
+                df2html(filename=filename, df=ps.sqldf(sql))
+                webbrowser.open('file://' + os.path.realpath(filename))
+            elif output == "XLSX":
+                df2xlsx(filename=filename, df=ps.sqldf(sql), anomalies=None)
+            elif output == "CSV":
+                df2csv(filename=filename, df=ps.sqldf(sql))
+            elif output == "JSON":
+                df2json(filename=filename, df=ps.sqldf(sql))
+            elif output == "XML":
+                df2xml(filename=filename, df=ps.sqldf(sql))
+            elif output == "SQL":
+                df2sql(filename=filename, df=ps.sqldf(sql))
+        return True
+    except Exception as e:
+        print(f"Error: {repr(e)}")
+        return False
