@@ -1729,6 +1729,7 @@ class SQLWindow(tk.Toplevel):
         
         self.query = tk.StringVar()
         self.output = tk.StringVar()
+        self.export_formats = ['HTML', 'XLSX', 'CSV', 'JSON', 'XML', 'SQL']
 
         self.main_frame = tk.Frame(self)
         self.main_frame.pack(side=tk.TOP, fill=tk.X, padx=5)
@@ -1744,13 +1745,13 @@ class SQLWindow(tk.Toplevel):
         self.output_label = ttk.Label(self.main_frame, text='Output format:')
         self.output_label.pack(anchor=tk.W, pady=5, fill=tk.X)
         self.output_chooser = ttk.Combobox(self, textvariable=self.output, state="readonly")
-        self.output_chooser['values'] = ['HTML', 'XLSX', 'CSV', 'JSON', 'XML', 'SQL']
+        self.output_chooser['values'] = self.export_formats
         self.output_chooser.current(0)
         self.output_chooser.pack(fill=tk.X, pady=5)
 
-        def _execute(event):
+        def run_query(event):
             self.query.set(self.qtxt.get("1.0", tk.END))
-            if self.query.get() and self.output.get():
+            if self.query.get().lower().startswith("select") and "df" in self.query.get().lower() and self.output.get() in self.export_formats:
                 if util.execute_sql_query(df=engine.df, sql=self.query.get(), output=self.output.get()):
                     if self.output.get() != "HTML":
                         mb.showinfo(title="Success!", message="The results are available in: ./export/sql", parent=self)
@@ -1763,7 +1764,7 @@ class SQLWindow(tk.Toplevel):
         self.exe_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
         self.exebtn = ttk.Button(self.exe_frame, text='Execute')
         self.exebtn.pack(fill=tk.X)
-        self.exebtn.bind('<Button-1>', _execute)
+        self.exebtn.bind('<Button-1>', run_query)
 
 if __name__ == "__main__":
     myapp = App()
