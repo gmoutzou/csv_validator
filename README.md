@@ -1,6 +1,5 @@
-# CSV Validator
-
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+# CSV Validator
 
 * CSV File validation tool with custom user defined rules
 * Rule Engine - Rules are executed "on the fly"
