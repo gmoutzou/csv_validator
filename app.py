@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.6.4"
+        self.version="5.6.6"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -928,7 +928,7 @@ class ConfigWindow(tk.Toplevel):
 class JL10ConfigWindow(tk.Toplevel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.geometry("460x180")
+        self.geometry("460x215")
         self.title("JL10 Configuration")
 
         self.spec_panel = tk.Frame(self)
@@ -962,7 +962,7 @@ class JL10ConfigWindow(tk.Toplevel):
 class FixedWidthConfigWindow(tk.Toplevel):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.geometry("480x340")
+        self.geometry("480x400")
         self.title("Fixed Width File Format Configuration")
 
         self.spec_panel = tk.Frame(self)

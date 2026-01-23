@@ -394,7 +394,7 @@ def jlx2df(filename, jl10_spec):
                     start = 0
                     rdict = {}
                     for i, c in enumerate(col_spec_list):
-                        colname = 'Column-' + str(i)
+                        colname = 'Column_' + str(i)
                         end = start + int(c)
                         coldata = record[start:end]
                         rdict[colname] = coldata
@@ -422,7 +422,7 @@ def fwf2df(filename, fwf_spec):
                     start = 0
                     rdict = {}
                     for i, c in enumerate(col_spec_list):
-                        colname = 'Column-' + str(i)
+                        colname = 'Column_' + str(i)
                         end = start + int(c)
                         coldata = record[start:end]
                         rdict[colname] = coldata
