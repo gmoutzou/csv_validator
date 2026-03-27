@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.6.6"
+        self.version="5.7.0"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -1656,6 +1656,7 @@ class DxhubWindow(tk.Toplevel):
                 self.progress_frame.pack(fill=tk.X)
                 t1 = threading.Thread(target=util.get_dxhub_result, args=(engine, self.service.get(), self.parameter.get(), self.column.get(), self.show_current_progress))
                 t1.start()
+                self.runbtn.forget()
                 #success_flag = util.get_dxhub_result(engine.df, self.service.get(), self.parameter.get(), self.column.get(), self.show_current_progress)
                 #if success_flag:
                 #    mb.showinfo(title="Success!", message="Process completed successfully! Use the export options to get the results.", parent=self)
@@ -1720,6 +1721,7 @@ class DxhubWindow(tk.Toplevel):
     def on_fail(self):
         mb.showerror(title="Error", message="An unexpected error has occurred.", parent=self)
         self.progress_frame.forget()
+        self.runbtn.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
 
 class SQLWindow(tk.Toplevel):
     def __init__(self, *args, engine=None, **kwargs):
