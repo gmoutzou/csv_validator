@@ -42,3 +42,6 @@ Whether you are dealing with a few kilobytes or several gigabytes of data, CVV e
 
 ## Developer
 Georgios Mountzouris 📧 gmountzouris@efka.gov.gr
+
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
