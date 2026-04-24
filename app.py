@@ -318,7 +318,7 @@ class App(Tk):
             web_release = self.release
         my_version = int(self.version.replace('.', ''))
         if (web_version > my_version) or (web_version == my_version and web_release != self.release):
-            mb.showwarning(title="Warning!", message="A new version is available (" + str(web_version) + " " + web_release + "), get it from " + config['download_url'], parent=self)
+            mb.showwarning(title="Warning!", message="A new version is available (" + str(version_info['version']) + " " + web_release + "), get it from " + config['download_url'], parent=self)
         else:
             if infomsg:
                 mb.showinfo(title="No newer version", message="You are running the latest vesion of Validator!", parent=self)
