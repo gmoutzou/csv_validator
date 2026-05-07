@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.7.0"
+        self.version="5.7.1"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -173,7 +173,7 @@ class App(Tk):
                 fwf_config = cfg.load_config(section='FWF')
                 nrows = 0 if self.on_the_fly_mode else None
                 self.engine = RuleEngine()
-                self.engine.df, tr_ell, above_threshold = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config, nrows=nrows)
+                self.engine.df, tr_ell, above_threshold = util.get_dataframe(self.csv_file.get().lower(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config, nrows=nrows)
                 if self.engine is not None and self.engine.df is not None:
                     if above_threshold:
                         mb.showwarning(title="Warning!", message="FIELD_R column violates the threshold rule!", parent=self)
@@ -196,8 +196,18 @@ class App(Tk):
             self.init_state()
 
     def open_csv_file(self):
-        self.csv_file.set(fd.askopenfilename(defaultextension=".csv", filetypes=[("CSV Comma Separatad Values","*.csv"), ("XLSX Spreadsheets","*.xlsx"), ("JSON Files","*.json"), ("JL10 Files","*.jlx"), ("All Files","*.*")]))
-
+        file_types = [
+            ("CSV Files", "*.csv *.CSV"),
+            ("XLSX Spreadsheets", "*.xlsx *.XLSX"),
+            ("JSON Files", "*.json *.JSON"),
+            ("JL10 Files", "*.jlx *.JLX"),
+            ("All Files", "*.*")
+        ]
+        
+        filename = fd.askopenfilename(defaultextension=".csv", filetypes=file_types)
+        
+        self.csv_file.set(filename)
+    
     def open_csv_config_window(self):
         self.config_window = ConfigWindow(self)
 

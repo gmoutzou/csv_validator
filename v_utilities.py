@@ -107,7 +107,7 @@ def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', typ
     except Exception as e:
         print(repr(e))
         pass
-    if df is not None and filename.endswith('TR.ELL.csv') and 'FIELD_R' in df and nrows is None:
+    if df is not None and filename.endswith('tr.ell.csv') and 'FIELD_R' in df and nrows is None:
         try:
             tr_ell = True
             t = 0.08
