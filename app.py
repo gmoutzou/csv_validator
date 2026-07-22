@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.7.1"
+        self.version="5.8.0"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -1683,7 +1683,7 @@ class DxhubWindow(tk.Toplevel):
         self.service_label = ttk.Label(self, text='Service:')
         self.service_label.pack(anchor=tk.W, padx=5, pady=5, fill=tk.X)
         self.service_chooser = ttk.Combobox(self, textvariable=self.service, state="readonly")
-        self.service_chooser['values'] = ['IDENTITY', 'REGISTRYSERVICE', 'AMKA2DATA', 'GETDEATHRECORDS', 'GETMARRIAGERECORDS', 'GETAGREEMENTRECORDS', 'LAWYERINFO']
+        self.service_chooser['values'] = ['IDENTITY', 'REGISTRYSERVICE', 'AMKA2DATA', 'GETDEATHRECORDS', 'GETMARRIAGERECORDS', 'GETAGREEMENTRECORDS', 'LAWYERINFO', 'CREL']
         self.service_chooser.pack(fill=tk.X, pady=5)
 
         self.parameter_label = ttk.Label(self, text='Parameter:')
@@ -1727,6 +1727,7 @@ class DxhubWindow(tk.Toplevel):
     def on_success(self):
         mb.showinfo(title="Success!", message="Process completed successfully! The results are available in ./export/dxhub", parent=self)
         self.destroy()
+        gc.collect()
 
     def on_fail(self):
         mb.showerror(title="Error", message="An unexpected error has occurred.", parent=self)
@@ -1767,6 +1768,7 @@ class SQLWindow(tk.Toplevel):
                 if util.execute_sql_query(df=engine.df, sql=self.query.get(), output=self.output.get()):
                     if self.output.get() != "HTML":
                         mb.showinfo(title="Success!", message="The results are available in: ./export/sql", parent=self)
+                    gc.collect()
                 else:
                     mb.showerror(title="Error!", message="An error occurred processing your query.", parent=self)
             else:
