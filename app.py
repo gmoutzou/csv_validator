@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="5.8.0"
+        self.version="6.0.0"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -96,6 +96,7 @@ class App(Tk):
         self.utilitiesmenu.add_separator()
         self.utilitiesmenu.add_command(label="Parallel processing workers", command=self.open_ppw_window)
         self.utilitiesmenu.add_separator()
+        self.utilitiesmenu.add_command(label="Generate DIASPAY File", command=self.generate_diaspay)
         self.utilitiesmenu.add_command(label="SQL", command=self.open_sql_window)
         self.utilitiesmenu.add_command(label="Dxhub check", command=self.open_dxhub_window)
         self.menubar.add_cascade(label="Utilities", menu=self.utilitiesmenu)
@@ -277,6 +278,24 @@ class App(Tk):
         if filename:
             util.df2sql(filename.show(), self.engine.df)
 
+    def generate_diaspay(self):
+        column_names = list(self.engine.df)
+        config = cfg.load_config(section="DIASPAY")
+        spec_column_names = config['input_file_columns'].split(',')
+        type = int(config['record_type'])
+        code = config['organization_code']
+        afm = config['organization_afm']
+        if set(column_names) == set(spec_column_names):
+            file_header_record = util.get_file_header_record(code, afm)
+            file_detail_record, total_records, hash_total, pdf_data_table = util.get_file_detail_record(type, self.engine.df)
+            file_trailer_record = util.get_file_trailer_record(total_records, hash_total)
+            success_flag, filename = util.generate_file(type, code, file_header_record, file_detail_record, file_trailer_record, pdf_data_table)
+            if success_flag:
+                mb.showinfo(title="Success!", message=f"DIAS file {filename} generated successfully!!", parent=self)
+            else:
+                mb.showwarning(title="Warning!", message="Something went wrong!", parent=self)
+            
+
     def data_structure(self):
         txt_content = ''
         bar = '========================================\n'
@@ -374,6 +393,7 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="normal")
         self.utilitiesmenu.entryconfig("Value frequency display", state="normal")
         self.utilitiesmenu.entryconfig("Parallel processing workers", state="normal")
+        self.utilitiesmenu.entryconfig("Generate DIASPAY File", state="normal")
         self.utilitiesmenu.entryconfig("SQL", state="normal")
         self.utilitiesmenu.entryconfig("Dxhub check", state="normal")
 
@@ -384,6 +404,7 @@ class App(Tk):
         self.utilitiesmenu.entryconfig("Outlier detection (Ensemble model)", state="disabled")
         self.utilitiesmenu.entryconfig("Value frequency display", state="disabled")
         self.utilitiesmenu.entryconfig("Parallel processing workers", state="disabled")
+        self.utilitiesmenu.entryconfig("Generate DIASPAY File", state="disabled")
         self.utilitiesmenu.entryconfig("SQL", state="disabled")
         self.utilitiesmenu.entryconfig("Dxhub check", state="disabled")
 

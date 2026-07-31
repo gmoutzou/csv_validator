@@ -3,27 +3,33 @@
 #
 # Vaidation Utilities
 #
-# georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
+# georgios mountzouris 2026 (gmountzouris@efka.gov.gr)
 #
 
 import os, io, re
 import csv
+import requests
+import webbrowser
 import pandas as pd
 import pandasql as ps
 import numpy as np
-import requests
-import webbrowser
+import datetime as dt
 import netifaces as ni
-import xml.etree.ElementTree as ET
 import v_common as common
 import v_client as client
+import xml.etree.ElementTree as ET
+from fpdf import FPDF
+from fpdf.fonts import FontFace
+from datetime import datetime
 from v_pgdev import Pgdev
 from pathlib import Path
+from v_dxhub import Dxhub
 from xlsxwriter.color import Color
 from dateutil.parser import parse
 from v_outlier_detector import OutlierDetector
-from v_dxhub import Dxhub
 
+
+LINE_BREAK = '\r\n'
 
 def print_msg_box(msg, indent=1, width=None, title=None):
     """Print message-box with optional title."""
@@ -532,3 +538,184 @@ def execute_sql_query(df, sql, output="CONSOLE"):
     except Exception as e:
         print(f"Error: {repr(e)}")
         return False
+
+def get_credit_date():
+    today_date = dt.date.today()
+    next_monday_date = today_date + dt.timedelta(days=-today_date.weekday(), weeks=1)
+    dates = (today_date + dt.timedelta(idx + 1) for idx in range((next_monday_date - today_date).days))
+    business_dates = sum(1 for day in dates if day.weekday() < 5)
+    if business_dates < 3:
+        next_monday_date = today_date + dt.timedelta(days=-today_date.weekday(), weeks=2)
+    next_monday = next_monday_date.strftime('%Y%m%d')
+    month = next_monday_date.strftime('%m')
+    year = next_monday_date.strftime('%Y')
+    return next_monday, month, year
+
+def get_credit_date_v2(days=3):
+    next_credit_date = dt.date.today()
+    if days > 0:
+        for d in range(1, days+1):
+            next_credit_date += dt.timedelta(days=1)
+            if next_credit_date.weekday() >= 5:
+                diff = 7 - next_credit_date.weekday()
+                next_credit_date += dt.timedelta(days=diff)
+    credit_date = next_credit_date.strftime('%Y%m%d')
+    month = next_credit_date.strftime('%m')
+    year = next_credit_date.strftime('%Y')
+    return credit_date, month, year
+
+def compute_credit_date():
+    now_time = datetime.strptime(str(datetime.now().time().strftime("%H:%M:%S")), "%H:%M:%S")
+    deadline = datetime.strptime("11:00:00", "%H:%M:%S")
+    diff = deadline - now_time
+    minutes_to_deadline = diff.total_seconds() / 60
+    if minutes_to_deadline >= 0:
+        cdate = get_credit_date_v2(days=1)
+    else:
+        cdate = get_credit_date_v2(days=2)
+    return cdate
+
+def space_fill(n):
+    return "".center(n, " ")
+
+def zero_fill(n):
+    return "".zfill(n)
+
+def get_bank_code(iban):
+    return iban[4:7]
+
+def get_bank_descr(bank_code):
+    bank_dict = {"011":"ΕΘΝΙΚΗ ΤΡΑΠΕΖΑ ΤΗΣ ΕΛΛΑΔΟΣ",
+                   "012":"ΕΜΠΟΡΙΚΗ ΤΡΑΠΕΖΑ ΤΗΣ ΕΛΛΑΔΟΣ",
+                   "014":"ΤΡΑΠΕΖΑ ΠΙΣΤΕΩΣ",
+                   "015":"ΓΕΝΙΚΗ ΤΡΑΠΕΖΑ ΤΗΣ ΕΛΛΑΔΟΣ",
+                   "016":"ΤΡΑΠΕΖΑ ΑΤΤΙΚΗΣ",
+                   "017":"ΤΡΑΠΕΖΑ ΠΕΙΡΑΙΩΣ",
+                   "026":"EFG ΕUROBANK",
+                   "028":"ΕΓΝΑΤΙΑ ΤΡΑΠΕΖΑ",
+                   "031":"ΛΑΪΚΗ ΤΡΑΠΕΖΑ",
+                   "032":"ΕΛΛΗΝΙΚΗ ΤΡΑΠΕΖΑ",
+                   "037":"ΩΜΕΓΑ ΤΡΑΠΕΖΑ",
+                   "038":"NOVA BANK",
+                   "043":"ΑΓΡΟΤΙΚΗ ΤΡΑΠΕΖΑ ΤΗΣ ΕΛΛΑΔΟΣ",
+                   "047":"ASPIS BANK",
+                   "054":"PROBANK",
+                   "055":"FIRST BUSINESS BANK (FBB)",
+                   "069":"ΣΥΝΕΤΑΙΡΙΣΤΙΚΗ ΤΡΑΠΕΖΑ ΧΑΝΙΩΝ",
+                   "071":"HSBC",
+                   "073":"ΤΡΑΠΕΖΑ ΚΥΠΡΟΥ",
+                   "079":"ΣΥΝΕΤΑΙΡΙΣΤΙΚΗ ΔΩΔΕΚΑΝΗΣΟΥ",
+                   "080":"AMERICAN EXPRESS",
+                   "084":"CITIBANK",
+                   "087":"ΠΑΓΚΡΗΤΙΑ ΣΥΝΕΤΑΙΡΙΣΤΙΚΗ",
+                   "096":"ΤΑΧΥΔΡΟΜΙΚΟ ΤΑΜΙΕΥΤΗΡΙΟ",
+                   "097":"ΤΑΜΕΙΟ ΠΑΡΑΚΑΤΑΘΗΚΩΝ ΚΑΙ ΔΑΝΕΙΩΝ"}
+    return bank_dict[bank_code]
+
+def get_file_header_record(code, afm):
+    cdate = compute_credit_date()
+    return "1P" + code.rjust(4, "0") + afm[:-1] + zero_fill(3) + cdate[0] + cdate[1] + cdate[2] + space_fill(129) + LINE_BREAK
+
+def get_file_trailer_record(total_records, hash_total):
+    return "7" + space_fill(4) + str(total_records).rjust(8, "0") + space_fill(4) + str(round(hash_total, 2)).replace('.', '').rjust(11, "0") + space_fill(2) + zero_fill(11) + space_fill(119) + LINE_BREAK
+
+def get_float_amount(amount):
+    amount = amount[:-2] + '.' + amount[-2:]
+    return round(float(amount), 2)
+
+def record_process(record, record_dict):
+    if record is not None:
+        #print(record['AA'], record['REGISTER_NUMBER'], record['SURNAME'], record['NAME'], record['FATHERNAME'], record['AMOUNT'], record['IBAN'])
+        detail_record = "4" + zero_fill(3) + zero_fill(13) + record['AMOUNT'].replace(',', '').rjust(8, "0") + record['SURNAME'].ljust(20, " ")[:20] + record['NAME'].ljust(6, " ")[:6] + record['FATHERNAME'].ljust(4, " ")[:4] + record['REGISTER_NUMBER'].rjust(10, "0")[:10] + space_fill(20) + space_fill(16) + space_fill(3) + zero_fill(8) + record['IBAN'] + space_fill(21)
+        bcode = get_bank_code(record['IBAN'])
+        if bcode in record_dict:
+            bgroup = record_dict.get(bcode)
+            bgroup.append(detail_record)
+            record_dict[bcode] = bgroup
+        else:
+            bgroup = []
+            bgroup.append(detail_record)
+            record_dict[bcode] = bgroup
+
+def get_record_dictionary(type, df):
+    detail_record_dict = {}
+    if type == 5:
+        df = df.reset_index()
+        proc_row = None
+        for index, row in df.iterrows():
+            if int(row['COUNT']) > 1:
+                if row['REGISTER_NUMBER'] == proc_row['REGISTER_NUMBER'] and row['IBAN'] == proc_row['IBAN']:
+                    proc_row['AMOUNT'] = ("%.2f" % (round(round(float(row['AMOUNT'].replace(',', '.')), 2) + round(float(proc_row['AMOUNT'].replace(',', '.')), 2), 2))).replace('.', ',')
+                else:
+                    record_process(proc_row, detail_record_dict)
+                    proc_row = row
+            else:
+                record_process(proc_row, detail_record_dict)
+                proc_row = row
+        record_process(proc_row, detail_record_dict)
+    return detail_record_dict 
+
+def get_file_detail_record(type, df):
+    if type == 5:
+        pdf_data_table = [("BANK_CODE", "BANK_DESCR", "CNT", "AMNT")]
+        hash_total = 0
+        total_records = 0
+        detail_record = ""
+        detail_record_dict = get_record_dictionary(type, df)
+        for key, val in detail_record_dict.items():
+            bank_total = 0
+            group_header_record = "2" + key + "30" + space_fill(154) + LINE_BREAK
+            details = ""
+            total_amount = 0
+            for rec in val:
+                details += rec + LINE_BREAK
+                total_amount += get_float_amount(rec[17:25])
+                total_amount = round(total_amount, 2)
+                bank_total += 1
+            total_records += bank_total
+            hash_total += total_amount
+            hash_total = round(hash_total, 2)
+            group_summary_record = "6" + space_fill(4) + str(len(val)).rjust(8, "0") + space_fill(4) + ("%.2f" % (total_amount)).replace('.', '').rjust(11, "0") + space_fill(2) + zero_fill(11) + space_fill(119) + LINE_BREAK
+            detail_record += group_header_record + details + group_summary_record
+            bank_row = (key, get_bank_descr(key), str(bank_total), ("%.2f" % (total_amount)).replace('.', ','))
+            pdf_data_table.append(bank_row)
+            totals_row = ("", "ΣΥΝΟΛΟ", str(total_records), ("%.2f" % (hash_total)).replace('.', ','))
+        pdf_data_table.append(totals_row)
+    return detail_record, total_records, hash_total, pdf_data_table
+
+def generate_file(type, code, header, details, trailer, pdf_data_table):
+    filename = ""
+    try:
+        if type == 5:
+            cdate = compute_credit_date()
+            Path("./export/diaspay/").mkdir(parents=True, exist_ok=True)
+            filename = f"./export/diaspay/MS{code.rjust(4, '0')}IF.{cdate[0]}"
+        content = header + details + trailer
+        with open(filename, "wb") as f:
+            f.write(content.encode('windows-1253'))
+        generate_pdf(pdf_data_table)
+    except Exception as e:
+        print(e)
+        return False, ""
+    return True, filename
+
+def generate_pdf(pdf_data_table):
+    pdf = FPDF(orientation="portrait", format="A4")
+    pdf.set_display_mode(zoom=100)
+    pdf.set_top_margin(20)
+    pdf.set_text_shaping(True)
+    pdf.add_font("dejavu-sans", style="", fname="./font/DejaVuSans.ttf")
+    pdf.add_font("dejavu-sans", style="b", fname="./font/DejaVuSans-Bold.ttf")
+    pdf.add_font("dejavu-sans", style="i", fname="./font/DejaVuSans-Oblique.ttf")
+    pdf.add_font("dejavu-sans", style="bi", fname="./font/DejaVuSans-BoldOblique.ttf")
+    pdf.set_font('dejavu-sans', size=10)
+    pdf.add_page()
+    lightgrey = (211, 211, 211)
+    headings_style = FontFace(emphasis="BOLD", fill_color=lightgrey)
+    with pdf.table(width=150, headings_style=headings_style, col_widths=(23, 55, 10, 30), text_align=("LEFT", "LEFT", "CENTER", "RIGHT")) as table:
+        for data_row in pdf_data_table:
+            row = table.row()
+            for data_cell in data_row:
+                row.cell(data_cell)
+    Path("./export/diaspay/").mkdir(parents=True, exist_ok=True)
+    pdf.output('./export/diaspay/summary.pdf')

@@ -17,8 +17,8 @@ class Dxhub():
         self.api_url = self.create_api_url()
 
     def create_api_url(self):
-        base_url = "http://127.0.0.1/service.php?"
-        api_key = "demo"
+        base_url = "http://10.33.244.101/dxhub/service.php"
+        api_key = "fe88a007fa"
         sid = "requestid=eefka&serviceid=validator"
         if self.service == "AMKA2DATA":
             sid = ""
@@ -26,7 +26,12 @@ class Dxhub():
         return api_url
 
     def service_call(self, value):
-        endpoint = self.api_url + value
+        if self.parameter.upper() == "AFM":
+            value = value.zfill(9)
+        elif self.parameter.upper() == "AMKA":
+            value = value.zfill(11)
+        endpoint = f"{self.api_url}{value}"
+        #print(endpoint)
         try:
             response = requests.get(endpoint)
             return response.status_code, response.json()
