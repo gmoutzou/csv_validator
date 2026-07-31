@@ -3,7 +3,7 @@
 #
 # configuration
 #
-# georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
+# georgios mountzouris 2026 (gmountzouris@efka.gov.gr)
 #
 
 

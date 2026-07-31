@@ -3,7 +3,7 @@
 #
 # Outlier detector
 #
-# georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
+# georgios mountzouris 2026 (gmountzouris@efka.gov.gr)
 #
 
 import numpy as np

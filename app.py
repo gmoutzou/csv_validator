@@ -5,7 +5,7 @@
 #
 # GUI
 #
-# Copyright (c) 2025 Georgios Mountzouris (gmountzouris@efka.gov.gr)
+# Copyright (c) 2026 Georgios Mountzouris (gmountzouris@efka.gov.gr)
 # Licensed under the MIT License (see LICENSE for details)
 
 import os, gc, sys

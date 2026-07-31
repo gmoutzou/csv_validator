@@ -3,7 +3,7 @@
 #
 # Vaidation Rule Module
 #
-# georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
+# georgios mountzouris 2026 (gmountzouris@efka.gov.gr)
 #
 
 class Rule():
