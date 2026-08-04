@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="6.0.0"
+        self.version="6.0.1"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -189,10 +189,10 @@ class App(Tk):
                         self.import_tr_ell_template()
                 else:
                     self.engine = None
-                    mb.showwarning(title="Warning!", message="Something went wrong with file reading!", parent=self)
+                    mb.showerror(title="Error!", message="Something went wrong with file reading!", parent=self)
             else:
                 self.init_state()
-                mb.showwarning(title="Warning!", message="Invalid file!", parent=self)
+                mb.showerror(title="Error!", message="Invalid file!", parent=self)
         else:
             self.init_state()
 
@@ -279,7 +279,7 @@ class App(Tk):
             util.df2sql(filename.show(), self.engine.df)
 
     def generate_diaspay(self):
-        column_names = list(self.engine.df)
+        column_names = util.get_df_columns(self.engine.df)
         config = cfg.load_config(section="DIASPAY")
         spec_column_names = config['input_file_columns'].split(',')
         type = int(config['record_type'])
@@ -293,7 +293,9 @@ class App(Tk):
             if success_flag:
                 mb.showinfo(title="Success!", message=f"DIAS file {filename} generated successfully!!", parent=self)
             else:
-                mb.showwarning(title="Warning!", message="Something went wrong!", parent=self)
+                mb.showerror(title="Error!", message="Something went wrong!", parent=self)
+        else:
+            mb.showerror(title="Error!", message="Input file columns do not match the expected specification!", parent=self)
             
 
     def data_structure(self):
@@ -703,7 +705,7 @@ class RulesManagementWindow(tk.Toplevel):
                     _listbox_fill()
                 else:
                     clear_all()
-                    mb.showwarning(title="Warning!", message="Invalid rules template!", parent=self)
+                    mb.showerror(title="Error!", message="Invalid rules template!", parent=self)
 
         def _export():
             if self.listbox.index("end") > 0:
@@ -1481,7 +1483,7 @@ class NewWorkerWindow(tk.Toplevel):
                     server_list.append(self.worker_ip.get())
                     parent.event_handler(server_list)
                 else:
-                    mb.showwarning(title="Warning!", message="The IP address is incorrect or the server is not activated!", parent=self)
+                    mb.showerror(title="Error!", message="The IP address is incorrect or the server is not activated!", parent=self)
                         
         self.control_frame = tk.Frame(self, background='grey', relief=tk.GROOVE)
         self.control_frame.pack(fill=tk.X, side=tk.TOP, pady=5)
