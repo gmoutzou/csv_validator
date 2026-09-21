@@ -99,21 +99,23 @@ def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', typ
     df = None
     above_threshold = False
     tr_ell = False
+    err_msg = ""
     try:
-        if filename.endswith('.csv'):
+        if filename.lower().endswith('.csv'):
             df = pd.read_csv(filename, sep=delimiter, header=header, encoding=encoding, dtype=type, nrows=nrows)
-        elif filename.endswith('.xlsx'):
+        elif filename.lower().endswith('.xlsx'):
             df = pd.read_excel(filename, dtype=str)
-        elif filename.endswith('.json'):
+        elif filename.lower().endswith('.json'):
             df = pd.read_json(filename, dtype=str)
-        elif filename.endswith('.jlx'):
+        elif filename.lower().endswith('.jlx'):
             df = jlx2df(filename, jlx_spec)
         else:
             df = fwf2df(filename, fwf_spec)
     except Exception as e:
         print(repr(e))
+        err_msg = str(e)
         pass
-    if df is not None and filename.endswith('tr.ell.csv') and 'FIELD_R' in df and nrows is None:
+    if df is not None and filename.lower().endswith('tr.ell.csv') and 'FIELD_R' in df and nrows is None:
         try:
             tr_ell = True
             t = 0.08
@@ -122,7 +124,7 @@ def get_dataframe(filename, delimiter=',', header='infer', encoding='utf-8', typ
         except Exception as e:
             print(repr(e))
             pass
-    return df, tr_ell, above_threshold
+    return df, tr_ell, above_threshold, err_msg
 
 def is_digit(n):
     try:

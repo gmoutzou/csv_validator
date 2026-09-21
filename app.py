@@ -36,7 +36,7 @@ fp = functools.partial
 class App(Tk):
     def __init__(self):
         Tk.__init__(self)
-        self.version="6.0.1"
+        self.version="6.0.3"
         self.release = "beta"
         self.init_title = "CSV File Validator v" + self.version + ' (' + self.release + ')'
         self.developer = "Georgios Mountzouris (gmountzouris@efka.gov.gr)"
@@ -174,7 +174,7 @@ class App(Tk):
                 fwf_config = cfg.load_config(section='FWF')
                 nrows = 0 if self.on_the_fly_mode else None
                 self.engine = RuleEngine()
-                self.engine.df, tr_ell, above_threshold = util.get_dataframe(self.csv_file.get().lower(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config, nrows=nrows)
+                self.engine.df, tr_ell, above_threshold, err_msg = util.get_dataframe(self.csv_file.get(), delimiter=sep, header=hdr, encoding=enc, type=object, jlx_spec=jlx_spec, fwf_spec=fwf_config, nrows=nrows)
                 if self.engine is not None and self.engine.df is not None:
                     if above_threshold:
                         mb.showwarning(title="Warning!", message="FIELD_R column violates the threshold rule!", parent=self)
@@ -189,7 +189,7 @@ class App(Tk):
                         self.import_tr_ell_template()
                 else:
                     self.engine = None
-                    mb.showerror(title="Error!", message="Something went wrong with file reading!", parent=self)
+                    mb.showerror(title="Error!", message=f"Something went wrong with file reading! {err_msg}", parent=self)
             else:
                 self.init_state()
                 mb.showerror(title="Error!", message="Invalid file!", parent=self)
