@@ -1,9 +1,9 @@
 #
-# project: sPAD
+# project: CSV Validator
 #
 # dxhub client
 #
-# georgios mountzouris 2026 (gmountzouris@efka.gov.gr)
+# georgios mountzouris 2025 (gmountzouris@efka.gov.gr)
 #
 
 import requests
@@ -17,7 +17,7 @@ class Dxhub():
         self.api_url = self.create_api_url()
 
     def create_api_url(self):
-        base_url = "http://127.0.0.1/dxhub/service.php"
+        base_url = "http://127.0.0.1/service.php?"
         api_key = "demo"
         sid = "requestid=eefka&serviceid=validator"
         if self.service == "AMKA2DATA":
